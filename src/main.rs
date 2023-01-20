@@ -31,25 +31,26 @@ fn main() {
     // one is a `UAUT` response, probably an authorize call to the
     // doorbell. This probably means, my device is trying to
     // authorize
-    let r = tcp_call(&[]);
     let mut s = 117;
 
-    loop {
-        let pre_aut = make_command("UAUT", s);
-        let r = tcp_call(&pre_aut);
-        println!("{:02x?}", r);
+    let pre_aut = make_command("UAUT", s);
+    let r = tcp_call(&pre_aut);
+    println!("{:02x?}", r);
 
-        let aut = make_uaut_command(&token, s);
-        let r = tcp_call(&aut);
+    let pre_aut = make_command("UAUT", s + 1);
+    let r = tcp_call(&pre_aut);
+    println!("{:02x?}", r);
 
-        match r {
-            Some(aut_b) => {
-                println!("{:02x?}", aut_b);
-                println!("WE'RE IN!");
-                break;
-            },
-            None => s += 1
-        }
+    let aut = make_uaut_command(&token, s);
+    let r = tcp_call(&aut);
+
+    match r {
+        Some(aut_b) => {
+            println!("{:02x?}", aut_b);
+            println!("WE'RE IN!");
+            break;
+        },
+        None => s += 1
     }
 }
 
