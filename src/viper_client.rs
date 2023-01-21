@@ -37,11 +37,11 @@ impl ViperClient {
     pub fn uaut(&mut self, token: &String) -> Option<String> {
         let control = [117, 95, 0];
         let pre_aut = Self::make_command("UAUT", &control);
-        let r = self.execute(&pre_aut).unwrap();
+        let r = self.execute(&pre_aut, 20).unwrap();
         println!("{:02x?}", &r);
 
         let aut = Self::make_uaut_command(&token, &control);
-        let r = self.execute(&aut);
+        let r = self.execute(&aut, 124);
 
         match r {
             Some(aut_b) => {
@@ -56,11 +56,11 @@ impl ViperClient {
     pub fn ucfg(&mut self) -> Option<String> {
         let control = [118, 95, 0];
         let pre = Self::make_command("UCFG", &control);
-        let r = self.execute(&pre).unwrap();
+        let r = self.execute(&pre, 20).unwrap();
         println!("{:02x?}", &r);
 
         let com = Self::make_ucfg_command(&control);
-        let r = self.execute(&com);
+        let r = self.execute(&com, 951);
 
         match r {
             Some(aut_b) => {
@@ -72,12 +72,12 @@ impl ViperClient {
         }
     }
 
-    fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
-        let mut buf = vec![];
+    fn execute(&mut self, b: &[u8], b_size: usize) -> Option<Vec<u8>> {
+        let mut buf = vec![0; b_size];
 
         return match self.stream.write(b) {
             Ok(_) => {
-                match self.stream.read_to_end(&mut buf) {
+                match self.stream.read_exact(&mut buf) {
                     Ok(_) => Some(buf),
                     Err(_) => None
                 }
@@ -93,23 +93,78 @@ impl ViperClient {
     }
 
     fn make_uaut_command(token: &String, control: &[u8]) -> Vec<u8> {
-        let command_prefix = [
-            0, 6, 109, 0, control[0], control[1], control[2], 0
-        ];
         let raw_com = fs::read_to_string("UAUT.json").unwrap();
         let com = raw_com.replace("USER-TOKEN", token);
-        let b_com = com.as_bytes();
 
-        [&command_prefix, &b_com[..]].concat()
+        Self::make_generic_command(com, control)
     }
 
     fn make_ucfg_command(control: &[u8]) -> Vec<u8> {
-        let command_prefix = [
-            0, 6, 94, 0, control[0], control[1], control[2], 0
-        ];
         let com = fs::read_to_string("UCFG.json").unwrap();
+
+        Self::make_generic_command(com, control)
+    }
+
+    fn make_generic_command(com: String, control: &[u8]) -> Vec<u8> {
         let b_com = com.as_bytes();
+        let second = b_com.len() / 255;
+
+        let length = if second > 0 {
+            (b_com.len() % 255) - 8 - second
+        } else {
+            (b_com.len() % 255) + 8
+        };
+
+        let command_prefix = [
+            0,
+            6,
+            length as u8,
+            second as u8,
+            control[0],
+            control[1],
+            control[2],
+            0
+        ];
 
         [&command_prefix, &b_com[..]].concat()
     }
+}
+
+#[test]
+fn test_content_length() {
+    let mut s = String::from("A");
+    s = s.repeat(94);
+    let b = ViperClient::make_generic_command(
+        s,
+        &[1, 2, 0]
+    );
+    assert_eq!(b[2], 102);
+    assert_eq!(b[3], 0);
+
+    let mut s = String::from("A");
+    s = s.repeat(367);
+    let b = ViperClient::make_generic_command(
+        s,
+        &[1, 2, 0]
+    );
+    assert_eq!(b[2], 103);
+    assert_eq!(b[3], 1);
+
+    let mut s = String::from("A");
+    s = s.repeat(752);
+    let b = ViperClient::make_generic_command(
+        s,
+        &[1, 2, 0]
+    );
+    assert_eq!(b[2], 232);
+    assert_eq!(b[3], 2);
+
+    let mut s = String::from("A");
+    s = s.repeat(951);
+    let b = ViperClient::make_generic_command(
+        s,
+        &[1, 2, 0]
+    );
+    assert_eq!(b[2], 175);
+    assert_eq!(b[3], 3);
 }
