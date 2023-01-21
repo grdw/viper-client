@@ -3,15 +3,12 @@ mod viper_client;
 
 use device::Device;
 use std::env;
-use std::fs;
-use std::str;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{thread, time::Duration};
 use viper_client::ViperClient;
 
 const TOKEN: &'static str = "TOKEN";
-const LOCAL_IP: &'static str = "127.0.0.1:7878";
 const DOORBELL_IP: &'static str = "192.168.1.9";
 const DOORBELL_PORT: u16 = 64100;
 
