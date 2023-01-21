@@ -86,7 +86,7 @@ impl ViperClient {
                 self.stream.read(&mut buf).unwrap();
                 Some(buf)
             },
-            Err(e) => None
+            Err(_) => None
         }
     }
 
