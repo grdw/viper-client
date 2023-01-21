@@ -1,7 +1,7 @@
 use std::env;
 use std::fs;
 use std::io::prelude::*;
-use std::net::{UdpSocket, TcpStream};
+use std::net::{UdpSocket, TcpStream, TcpListener};
 use std::{thread, time::Duration};
 
 // This merely polls if somebody is at the door or not
@@ -31,26 +31,30 @@ fn main() {
     // one is a `UAUT` response, probably an authorize call to the
     // doorbell. This probably means, my device is trying to
     // authorize
+    let doorbell = format!("{}:{}",
+                           DOORBELL_IP,
+                           DOORBELL_PORT);
+
+    let mut stream = TcpStream::connect(doorbell)
+        .expect("Doorbell unavailable");
     let mut s = 117;
 
-    let pre_aut = make_command("UAUT", s);
-    let r = tcp_call(&pre_aut);
-    println!("{:02x?}", r);
+    stream.set_read_timeout(Some(Duration::from_millis(5000))).unwrap();
+    stream.set_write_timeout(Some(Duration::from_millis(5000))).unwrap();
 
-    let pre_aut = make_command("UAUT", s + 1);
-    let r = tcp_call(&pre_aut);
+    let pre_aut = make_command("UAUT", s);
+    let r = tcp_call(&mut stream, &pre_aut);
     println!("{:02x?}", r);
 
     let aut = make_uaut_command(&token, s);
-    let r = tcp_call(&aut);
+    let r = tcp_call(&mut stream, &aut);
 
     match r {
         Some(aut_b) => {
             println!("{:02x?}", aut_b);
             println!("WE'RE IN!");
-            break;
         },
-        None => s += 1
+        None => println!("SADNESS")
     }
 }
 
@@ -78,18 +82,7 @@ fn make_uaut_command(token: &String, control: u8) -> Vec<u8> {
     [&command_prefix, &b_com[..]].concat()
 }
 
-fn tcp_call(bytes: &[u8]) -> Option<[u8; 256]> {
-    println!("{:02x?}", bytes);
-    let doorbell = format!("{}:{}",
-                           DOORBELL_IP,
-                           DOORBELL_PORT);
-
-    let mut stream = TcpStream::connect(doorbell)
-        .expect("Doorbell unavailable");
-
-    stream.set_read_timeout(Some(Duration::from_millis(5000))).unwrap();
-    stream.set_write_timeout(Some(Duration::from_millis(5000))).unwrap();
-
+fn tcp_call(stream: &mut TcpStream, bytes: &[u8]) -> Option<[u8; 256]> {
     let mut buf = [0; 256];
     return match stream.write(bytes) {
         Ok(_) => {
