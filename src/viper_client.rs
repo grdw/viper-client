@@ -3,9 +3,9 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
 
+const TIMEOUT: u64 = 5000;
 // This is the command prefix I see flying by
 // every time
-const TIMEOUT: u64 = 5000;
 const COMMAND_PREFIX: [u8; 16] = [
     0,   6,   15, 0, 0, 0, 0, 0,
     205, 171, 1,  0, 7, 0, 0, 0
