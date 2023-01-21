@@ -37,15 +37,14 @@ impl ViperClient {
     pub fn uaut(&mut self, token: &String) -> Option<String> {
         let control = [117, 95, 0];
         let pre_aut = Self::make_command("UAUT", &control);
-        let r = self.execute(&pre_aut, 20).unwrap();
+        let r = self.execute(&pre_aut).unwrap();
         println!("{:02x?}", &r);
 
         let aut = Self::make_uaut_command(&token, &control);
-        let r = self.execute(&aut, 124);
+        let r = self.execute(&aut);
 
         match r {
             Some(aut_b) => {
-                println!("{:?}", aut_b.len());
                 let relevant_bytes = &aut_b[8..124];
                 let json = String::from_utf8(relevant_bytes.to_vec()).unwrap();
                 Some(json)
@@ -57,11 +56,11 @@ impl ViperClient {
     pub fn ucfg(&mut self) -> Option<String> {
         let control = [118, 95, 0];
         let pre = Self::make_command("UCFG", &control);
-        let r = self.execute(&pre, 20).unwrap();
+        let r = self.execute(&pre).unwrap();
         println!("{:02x?}", &r);
 
         let com = Self::make_ucfg_command(&control);
-        let r = self.execute(&com, 951);
+        let r = self.execute(&com);
 
         match r {
             Some(aut_b) => {
@@ -73,12 +72,12 @@ impl ViperClient {
         }
     }
 
-    fn execute(&mut self, b: &[u8], b_size: usize) -> Option<Vec<u8>> {
-        let mut buf = vec![0; b_size];
+    fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
+        let mut buf = vec![];
 
         return match self.stream.write(b) {
             Ok(_) => {
-                match self.stream.read(&mut buf) {
+                match self.stream.read_to_end(&mut buf) {
                     Ok(_) => Some(buf),
                     Err(_) => None
                 }
