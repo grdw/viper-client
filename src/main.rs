@@ -8,6 +8,7 @@ use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
 
+const TIMEOUT: u64 = 5000;
 const TOKEN: &'static str = "TOKEN";
 const DOORBELL_IP: &'static str = "192.168.1.9";
 const DOORBELL_PORT: u16 = 64100;
@@ -32,14 +33,19 @@ fn main() {
     let mut stream = TcpStream::connect(doorbell)
         .expect("Doorbell unavailable");
 
-    stream.set_read_timeout(Some(Duration::from_millis(5000))).unwrap();
-    stream.set_write_timeout(Some(Duration::from_millis(5000))).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_millis(TIMEOUT)))
+        .unwrap();
+
+    stream
+        .set_write_timeout(Some(Duration::from_millis(TIMEOUT)))
+        .unwrap();
 
     // Manually set some control bytes:
     let control = [117, 95, 0];
     let pre_aut = make_command("UAUT", &control);
-    let r = tcp_call(&mut stream, &pre_aut);
-    println!("{:02x?}", r);
+    let r = tcp_call(&mut stream, &pre_aut).unwrap();
+    println!("{:02x?}", &r[0..18]);
 
     let aut = make_uaut_command(&token, &control);
     let r = tcp_call(&mut stream, &aut);
