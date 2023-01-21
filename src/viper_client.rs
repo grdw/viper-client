@@ -76,21 +76,17 @@ impl ViperClient {
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
-                self.stream.read_exact(&mut head).unwrap();
-                println!("{:?}", head);
+                self.stream.read(&mut head).unwrap();
                 let buffer_size = Self::buffer_length(
                     head[2],
                     head[3]
                 );
 
                 let mut buf = vec![0; buffer_size];
-                self.stream.read_exact(&mut buf).unwrap();
+                self.stream.read(&mut buf).unwrap();
                 Some(buf)
             },
-            Err(e) => {
-                println!("----> {:?}", e);
-                None
-            }
+            Err(_) => None
         }
     }
 
@@ -111,7 +107,7 @@ impl ViperClient {
         let b2 = b2 as usize;
         let b3 = b3 as usize;
 
-        (b3 * 255) + b2 + 8 + b3
+        (b3 * 255) + b2 + b3
     }
 }
 
@@ -127,12 +123,7 @@ impl Command {
     fn make(com: String, control: &[u8]) -> Vec<u8> {
         let b_com = com.as_bytes();
         let second = b_com.len() / 255;
-
-        let length = if second > 0 {
-            (b_com.len() % 255) - 8 - second
-        } else {
-            (b_com.len() % 255) + 8
-        };
+        let length = (b_com.len() % 255) - second;
 
         let command_prefix = [
             0,
@@ -149,6 +140,7 @@ impl Command {
     }
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::str;
@@ -159,10 +151,11 @@ mod tests {
     fn test_content_length() {
         let control = [1, 2, 0];
         let list = vec![
-            (94, 102, 0),
-            (367, 103, 1),
-            (752, 232, 2),
-            (951, 175, 3)
+            (94, 94, 0),
+            (117, 117, 0),
+            (367, 111, 1),
+            (752, 240, 2),
+            (951, 183, 3)
         ];
 
         for (byte_length, b2, b3) in list {
@@ -176,11 +169,11 @@ mod tests {
 
     #[test]
     fn test_buffer_length() {
-        assert_eq!(ViperClient::buffer_length(94, 0), 102);
-        assert_eq!(ViperClient::buffer_length(109, 0), 117);
-        assert_eq!(ViperClient::buffer_length(103, 1), 367);
-        assert_eq!(ViperClient::buffer_length(232, 2), 752);
-        assert_eq!(ViperClient::buffer_length(175, 3), 951);
+        assert_eq!(ViperClient::buffer_length(94, 0), 94);
+        assert_eq!(ViperClient::buffer_length(109, 0), 109);
+        assert_eq!(ViperClient::buffer_length(103, 1), 359);
+        assert_eq!(ViperClient::buffer_length(232, 2), 744);
+        assert_eq!(ViperClient::buffer_length(175, 3), 943);
     }
 
     #[test]
@@ -200,15 +193,12 @@ mod tests {
             socket.read(&mut buf).unwrap();
             socket.write(&[
                 0, 0, length, 0, 0, 0, 0, 0,
-                65, 65, 65, 65, 65, 65, 65, 65, 65, 65
+                65, 65
             ]).unwrap();
         });
 
         let response = client.execute(&[0]).unwrap();
-        assert_eq!(
-            str::from_utf8(&response).unwrap(),
-            "AAAAAAAAAA"
-        );
+        assert_eq!(str::from_utf8(&response).unwrap(), "AA");
     }
 
     #[test]
@@ -263,6 +253,6 @@ mod tests {
             &client.control
         );
         let r = client.execute(&aut).unwrap();
-        assert_eq!(r.len(), 99);
+        assert_eq!(r.len(), 83);
     }
 }
