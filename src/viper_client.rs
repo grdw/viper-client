@@ -73,26 +73,20 @@ impl ViperClient {
     }
 
     fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
-        println!("{:02x?}", b);
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
                 self.stream.read(&mut head).unwrap();
-                println!("~~> {:?}", head);
                 let buffer_size = Self::buffer_length(
                     head[2],
                     head[3]
                 );
 
                 let mut buf = vec![0; buffer_size];
-                println!("~~> {:?}", buffer_size);
                 self.stream.read(&mut buf).unwrap();
                 Some(buf)
             },
-            Err(e) => {
-                println!("----> {:?}", e);
-                None
-            }
+            Err(e) => None
         }
     }
 
