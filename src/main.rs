@@ -34,7 +34,7 @@ fn main() {
                 DOORBELL_IP,
                 DOORBELL_PORT
             );
-            client.execute_uaut_command(&token);
+            client.uaut(&token);
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {

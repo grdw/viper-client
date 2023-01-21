@@ -34,7 +34,7 @@ impl ViperClient {
         }
     }
 
-    pub fn execute_uaut_command(&mut self, token: &String) -> Option<String> {
+    pub fn uaut(&mut self, token: &String) -> Option<String> {
         let control = [117, 95, 0];
         let pre_aut = Self::make_command("UAUT", &control);
         let r = self.execute(&pre_aut).unwrap();
