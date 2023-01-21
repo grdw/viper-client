@@ -31,9 +31,15 @@ fn main() {
         let is_up = Device::poll(DOORBELL_IP, DOORBELL_PORT);
 
         if is_up && !prev {
-            println!("Connect...");
+            println!("Connected!");
+
+            let mut client = ViperClient::new(
+                DOORBELL_IP,
+                DOORBELL_PORT
+            );
+            client.execute_uaut_command(&token);
         } else if !is_up && prev {
-            println!("Disconnect...");
+            println!("Disconnected!");
         } else if !is_up && !prev {
             println!("Idle...")
         }

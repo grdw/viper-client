@@ -12,13 +12,11 @@ const COMMAND_PREFIX: [u8; 16] = [
 ];
 
 pub struct ViperClient {
-    ip: String,
-    port: u16,
     stream: TcpStream
 }
 
 impl ViperClient {
-    pub fn new(ip: String, port: u16) -> ViperClient {
+    pub fn new(ip: &'static str, port: u16) -> ViperClient {
         let doorbell = format!("{}:{}", ip, port);
         let mut stream = TcpStream::connect(doorbell)
             .expect("Doorbell unavailable");
@@ -32,13 +30,11 @@ impl ViperClient {
             .unwrap();
 
         ViperClient {
-            ip: ip,
-            port: port,
             stream: stream
         }
     }
 
-    pub fn execute_uat_command(&mut self, token: String) -> Option<String> {
+    pub fn execute_uaut_command(&mut self, token: &String) -> Option<String> {
         let control = [117, 95, 0];
         let pre_aut = Self::make_command("UAUT", &control);
         let r = self.execute(&pre_aut).unwrap();
