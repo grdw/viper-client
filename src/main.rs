@@ -32,9 +32,10 @@ fn main() {
 
             let mut client = ViperClient::new(
                 DOORBELL_IP,
-                DOORBELL_PORT
+                DOORBELL_PORT,
+                &token
             );
-            println!("{:?}", client.uaut(&token));
+            println!("{:?}", client.uaut());
             println!("{:?}", client.ucfg());
         } else if !is_up && prev {
             println!("Disconnected!");
