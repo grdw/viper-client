@@ -199,15 +199,12 @@ mod tests {
             socket.read(&mut buf).unwrap();
             socket.write(&[
                 0, 0, length, 0, 0, 0, 0, 0,
-                65, 65, 65, 65, 65, 65, 65, 65, 65, 65
+                65, 65
             ]).unwrap();
         });
 
         let response = client.execute(&[0]).unwrap();
-        assert_eq!(
-            str::from_utf8(&response).unwrap(),
-            "AAAAAAAAAA"
-        );
+        assert_eq!(str::from_utf8(&response).unwrap(), "AA");
     }
 
     #[test]
