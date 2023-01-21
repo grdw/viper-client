@@ -40,44 +40,36 @@ impl ViperClient {
 
     pub fn uaut(&mut self) -> Option<String> {
         self.tick();
-        let pre_aut = Command::preflight("UAUT", &self.control);
-        let aut = self.make_uaut_command();
-
-        let r = self.execute(&pre_aut).unwrap();
-        println!("{:02x?}", &r);
-        let r = self.execute(&aut);
-
-        match r {
-            Some(aut_b) => {
-                let relevant_bytes = &aut_b;
-                let json = String::from_utf8(relevant_bytes.to_vec()).unwrap();
-                Some(json)
-            },
-            None => None
-        }
+        self.execute_command("UAUT")
     }
 
     pub fn ucfg(&mut self) -> Option<String> {
         self.tick();
-        let pre = Command::preflight("UCFG", &self.control);
-        let com = self.make_ucfg_command();
-        let r = self.execute(&pre).unwrap();
-        println!("{:02x?}", &r);
-        let r = self.execute(&com);
-
-        match r {
-            Some(aut_b) => {
-                let relevant_bytes = &aut_b;
-                let json = String::from_utf8(relevant_bytes.to_vec()).unwrap();
-                Some(json)
-            },
-            None => None
-        }
+        self.execute_command("UCFG")
     }
 
     // Move the control byte 1 ahead
     fn tick(&mut self) {
         self.control[0] += 1
+    }
+
+    fn execute_command(&mut self, command: &'static str) -> Option<String> {
+        let pre = Command::preflight(command, &self.control);
+        let com = Command::make(
+            self.command_json(command),
+            &self.control
+        );
+
+        self.execute(&pre).unwrap();
+        let r = self.execute(&com);
+
+        if let Some(aut_b) = r {
+            let relevant_bytes = aut_b.to_vec();
+            let json = String::from_utf8(relevant_bytes).unwrap();
+            Some(json)
+        } else {
+            None
+        }
     }
 
     fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
@@ -102,17 +94,17 @@ impl ViperClient {
         }
     }
 
-    fn make_uaut_command(&self) -> Vec<u8> {
-        let raw_com = fs::read_to_string("UAUT.json").unwrap();
-        let com = raw_com.replace("USER-TOKEN", &self.token);
-
-        Command::make(com, &self.control)
-    }
-
-    fn make_ucfg_command(&self) -> Vec<u8> {
-        let com = fs::read_to_string("UCFG.json").unwrap();
-
-        Command::make(com, &self.control)
+    fn command_json(&self, command: &'static str) -> String {
+        match command {
+            "UAUT" => {
+                let raw_com = fs::read_to_string("UAUT.json").unwrap();
+                raw_com.replace("USER-TOKEN", &self.token)
+            },
+            "UCFG" => fs::read_to_string("UCFG.json").unwrap(),
+            _ => {
+                panic!("Not available {}", command)
+            }
+        }
     }
 
     fn buffer_length(b2: u8, b3: u8) -> usize {
@@ -266,7 +258,10 @@ mod tests {
             socket.write(&[&head, &buf[..]].concat()).unwrap();
         });
 
-        let aut = client.make_uaut_command();
+        let aut = Command::make(
+            client.command_json("UAUT"),
+            &client.control
+        );
         let r = client.execute(&aut).unwrap();
         assert_eq!(r.len(), 99);
     }
