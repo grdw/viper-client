@@ -86,7 +86,6 @@ impl ViperClient {
                 );
 
                 let mut buf = vec![0; buffer_size];
-                println!("{}", buffer_size);
                 self.stream.read_exact(&mut buf).unwrap();
                 Some(buf)
             },
