@@ -128,6 +128,13 @@ impl ViperClient {
 
         [&command_prefix, &b_com[..]].concat()
     }
+
+    fn dynamic_buffer_length(b2: u8, b3: u8) -> usize {
+        let b2 = b2 as usize;
+        let b3 = b3 as usize;
+
+        (b3 * 255) + b2 + 8 + b3
+    }
 }
 
 #[test]
@@ -147,4 +154,13 @@ fn test_content_length() {
         assert_eq!(b[2], b2);
         assert_eq!(b[3], b3);
     }
+}
+
+#[test]
+fn dynamic_buffer_length() {
+    assert_eq!(ViperClient::dynamic_buffer_length(94, 0), 102);
+    assert_eq!(ViperClient::dynamic_buffer_length(109, 0), 117);
+    assert_eq!(ViperClient::dynamic_buffer_length(103, 1), 367);
+    assert_eq!(ViperClient::dynamic_buffer_length(232, 2), 752);
+    assert_eq!(ViperClient::dynamic_buffer_length(175, 3), 951);
 }
