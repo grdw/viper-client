@@ -132,39 +132,19 @@ impl ViperClient {
 
 #[test]
 fn test_content_length() {
-    let mut s = String::from("A");
-    s = s.repeat(94);
-    let b = ViperClient::make_generic_command(
-        s,
-        &[1, 2, 0]
-    );
-    assert_eq!(b[2], 102);
-    assert_eq!(b[3], 0);
+    let control = [1, 2, 0];
+    let list = vec![
+        (94, 102, 0),
+        (367, 103, 1),
+        (752, 232, 2),
+        (951, 175, 3)
+    ];
 
-    let mut s = String::from("A");
-    s = s.repeat(367);
-    let b = ViperClient::make_generic_command(
-        s,
-        &[1, 2, 0]
-    );
-    assert_eq!(b[2], 103);
-    assert_eq!(b[3], 1);
-
-    let mut s = String::from("A");
-    s = s.repeat(752);
-    let b = ViperClient::make_generic_command(
-        s,
-        &[1, 2, 0]
-    );
-    assert_eq!(b[2], 232);
-    assert_eq!(b[3], 2);
-
-    let mut s = String::from("A");
-    s = s.repeat(951);
-    let b = ViperClient::make_generic_command(
-        s,
-        &[1, 2, 0]
-    );
-    assert_eq!(b[2], 175);
-    assert_eq!(b[3], 3);
+    for (byte_length, b2, b3) in list {
+        let mut s = String::from("A");
+        s = s.repeat(byte_length);
+        let b = ViperClient::make_generic_command(s, &control);
+        assert_eq!(b[2], b2);
+        assert_eq!(b[3], b3);
+    }
 }
