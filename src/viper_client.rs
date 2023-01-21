@@ -12,11 +12,13 @@ const COMMAND_PREFIX: [u8; 16] = [
 ];
 
 pub struct ViperClient {
-    stream: TcpStream
+    stream: TcpStream,
+    token: String,
+    control: [u8; 3]
 }
 
 impl ViperClient {
-    pub fn new(ip: &'static str, port: u16) -> ViperClient {
+    pub fn new(ip: &'static str, port: u16, token: &String) -> ViperClient {
         let doorbell = format!("{}:{}", ip, port);
         let stream = TcpStream::connect(doorbell)
             .expect("Doorbell unavailable");
@@ -30,87 +32,237 @@ impl ViperClient {
             .unwrap();
 
         ViperClient {
-            stream: stream
+            stream: stream,
+            token: token.to_string(),
+            control: [117, 95, 0]
         }
     }
 
-    pub fn uaut(&mut self, token: &String) -> Option<String> {
-        let control = [117, 95, 0];
-        let pre_aut = Self::make_command("UAUT", &control);
-        let r = self.execute(&pre_aut, 20).unwrap();
-        println!("{:02x?}", &r);
-
-        let aut = Self::make_uaut_command(&token, &control);
-        let r = self.execute(&aut, 124);
-
-        match r {
-            Some(aut_b) => {
-                println!("{:?}", aut_b.len());
-                let relevant_bytes = &aut_b[8..124];
-                let json = String::from_utf8(relevant_bytes.to_vec()).unwrap();
-                Some(json)
-            },
-            None => None
-        }
+    pub fn uaut(&mut self) -> Option<String> {
+        self.tick();
+        self.execute_command("UAUT")
     }
 
     pub fn ucfg(&mut self) -> Option<String> {
-        let control = [118, 95, 0];
-        let pre = Self::make_command("UCFG", &control);
-        let r = self.execute(&pre, 20).unwrap();
-        println!("{:02x?}", &r);
+        self.tick();
+        self.execute_command("UCFG")
+    }
 
-        let com = Self::make_ucfg_command(&control);
-        let r = self.execute(&com, 951);
+    // Move the control byte 1 ahead
+    fn tick(&mut self) {
+        self.control[0] += 1
+    }
 
-        match r {
-            Some(aut_b) => {
-                let relevant_bytes = &aut_b[8..951];
-                let json = String::from_utf8(relevant_bytes.to_vec()).unwrap();
-                Some(json)
-            },
-            None => None
+    fn execute_command(&mut self, command: &'static str) -> Option<String> {
+        let pre = Command::preflight(command, &self.control);
+        let com = Command::make(
+            self.command_json(command),
+            &self.control
+        );
+
+        self.execute(&pre).unwrap();
+        let r = self.execute(&com);
+
+        if let Some(aut_b) = r {
+            let relevant_bytes = aut_b.to_vec();
+            let json = String::from_utf8(relevant_bytes).unwrap();
+            Some(json)
+        } else {
+            None
         }
     }
 
-    fn execute(&mut self, b: &[u8], b_size: usize) -> Option<Vec<u8>> {
-        let mut buf = vec![0; b_size];
-
+    fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
         return match self.stream.write(b) {
             Ok(_) => {
-                match self.stream.read(&mut buf) {
-                    Ok(_) => Some(buf),
-                    Err(_) => None
-                }
+                let mut head = [0; 8];
+                self.stream.read_exact(&mut head).unwrap();
+                println!("{:?}", head);
+                let buffer_size = Self::buffer_length(
+                    head[2],
+                    head[3]
+                );
+
+                let mut buf = vec![0; buffer_size];
+                self.stream.read_exact(&mut buf).unwrap();
+                Some(buf)
             },
-            Err(_) => None
+            Err(e) => {
+                println!("----> {:?}", e);
+                None
+            }
         }
     }
 
-    fn make_command(command: &'static str, control: &[u8]) -> Vec<u8> {
+    fn command_json(&self, command: &'static str) -> String {
+        match command {
+            "UAUT" => {
+                let raw_com = fs::read_to_string("UAUT.json").unwrap();
+                raw_com.replace("USER-TOKEN", &self.token)
+            },
+            "UCFG" => fs::read_to_string("UCFG.json").unwrap(),
+            _ => {
+                panic!("Not available {}", command)
+            }
+        }
+    }
+
+    fn buffer_length(b2: u8, b3: u8) -> usize {
+        let b2 = b2 as usize;
+        let b3 = b3 as usize;
+
+        (b3 * 255) + b2 + 8 + b3
+    }
+}
+
+struct Command { }
+
+impl Command {
+    fn preflight(command: &'static str, control: &[u8]) -> Vec<u8> {
         let b_comm = command.as_bytes();
 
         [&COMMAND_PREFIX, &b_comm[..], &control[..]].concat()
     }
 
-    fn make_uaut_command(token: &String, control: &[u8]) -> Vec<u8> {
-        let command_prefix = [
-            0, 6, 109, 0, control[0], control[1], control[2], 0
-        ];
-        let raw_com = fs::read_to_string("UAUT.json").unwrap();
-        let com = raw_com.replace("USER-TOKEN", token);
+    fn make(com: String, control: &[u8]) -> Vec<u8> {
         let b_com = com.as_bytes();
+        let second = b_com.len() / 255;
+
+        let length = if second > 0 {
+            (b_com.len() % 255) - 8 - second
+        } else {
+            (b_com.len() % 255) + 8
+        };
+
+        let command_prefix = [
+            0,
+            6,
+            length as u8,
+            second as u8,
+            control[0],
+            control[1],
+            control[2],
+            0
+        ];
 
         [&command_prefix, &b_com[..]].concat()
     }
+}
 
-    fn make_ucfg_command(control: &[u8]) -> Vec<u8> {
-        let command_prefix = [
-            0, 6, 94, 0, control[0], control[1], control[2], 0
+mod tests {
+    use super::*;
+    use std::str;
+    use std::thread;
+    use std::net::TcpListener;
+
+    #[test]
+    fn test_content_length() {
+        let control = [1, 2, 0];
+        let list = vec![
+            (94, 102, 0),
+            (367, 103, 1),
+            (752, 232, 2),
+            (951, 175, 3)
         ];
-        let com = fs::read_to_string("UCFG.json").unwrap();
-        let b_com = com.as_bytes();
 
-        [&command_prefix, &b_com[..]].concat()
+        for (byte_length, b2, b3) in list {
+            let mut s = String::from("A");
+            s = s.repeat(byte_length);
+            let b = Command::make(s, &control);
+            assert_eq!(b[2], b2);
+            assert_eq!(b[3], b3);
+        }
+    }
+
+    #[test]
+    fn test_buffer_length() {
+        assert_eq!(ViperClient::buffer_length(94, 0), 102);
+        assert_eq!(ViperClient::buffer_length(109, 0), 117);
+        assert_eq!(ViperClient::buffer_length(103, 1), 367);
+        assert_eq!(ViperClient::buffer_length(232, 2), 752);
+        assert_eq!(ViperClient::buffer_length(175, 3), 951);
+    }
+
+    #[test]
+    fn test_execute() {
+        let listener = TcpListener::bind("127.0.0.1:3333").unwrap();
+        let mut client = ViperClient::new(
+            "127.0.0.1",
+            3333,
+            &String::from("ABCDEF")
+        );
+
+        // This is the doorbell server essentially
+        thread::spawn(move || {
+            let length = 2;
+            let (mut socket, _addr) = listener.accept().unwrap();
+            let mut buf = [0; 1];
+            socket.read(&mut buf).unwrap();
+            socket.write(&[
+                0, 0, length, 0, 0, 0, 0, 0,
+                65, 65, 65, 65, 65, 65, 65, 65, 65, 65
+            ]).unwrap();
+        });
+
+        let response = client.execute(&[0]).unwrap();
+        assert_eq!(
+            str::from_utf8(&response).unwrap(),
+            "AAAAAAAAAA"
+        );
+    }
+
+    #[test]
+    fn test_make_command() {
+        let listener = TcpListener::bind("127.0.0.1:3334").unwrap();
+        let mut client = ViperClient::new(
+            "127.0.0.1",
+            3334,
+            &String::from("ABCDEF")
+        );
+
+        // This is the doorbell server essentially
+        thread::spawn(move || {
+            let (mut socket, _addr) = listener.accept().unwrap();
+            let mut head = [0; 8];
+            socket.read(&mut head).unwrap();
+
+            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let mut buf = vec![0; bl];
+            socket.read(&mut buf).unwrap();
+            socket.write(&[&head, &buf[..]].concat()).unwrap();
+        });
+
+        let pre = Command::preflight("UCFG", &client.control);
+        let r = client.execute(&pre).unwrap();
+        assert_eq!(&r[0..8], &COMMAND_PREFIX[8..]);
+    }
+
+    #[test]
+    fn test_make_uat_command() {
+        let listener = TcpListener::bind("127.0.0.1:3335").unwrap();
+        let mut client = ViperClient::new(
+            "127.0.0.1",
+            3335,
+            &String::from("ABCDEF")
+        );
+
+        // This is the doorbell server essentially
+        thread::spawn(move || {
+            let (mut socket, _addr) = listener.accept().unwrap();
+            let mut head = [0; 8];
+            socket.read(&mut head).unwrap();
+
+            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let mut buf = vec![0; bl];
+            socket.read(&mut buf).unwrap();
+            socket.write(&[&head, &buf[..]].concat()).unwrap();
+        });
+
+        let aut = Command::make(
+            client.command_json("UAUT"),
+            &client.control
+        );
+        let r = client.execute(&aut).unwrap();
+        assert_eq!(r.len(), 99);
     }
 }
