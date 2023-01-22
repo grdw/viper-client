@@ -8,10 +8,10 @@ use std::time::Duration;
 const TIMEOUT: u64 = 5000;
 // This is the command prefix I see flying by
 // every time
-const COMMAND_PREFIX: [u8; 16] = [
-    0,   6,   15, 0, 0, 0, 0, 0,
-    205, 171, 1,  0, 7, 0, 0, 0
-];
+const COMMAND_HEADER: [u8; 8] = [205, 171, 1,  0, 7, 0, 0, 0];
+// This is another header that's pretty consistent,
+// not sure what it's for tbh:
+const UNKNOWN_HEADER: [u8; 8] = [239, 1,   3,  0, 2, 0, 0, 0];
 
 pub struct ViperClient {
     stream: TcpStream,
@@ -69,26 +69,97 @@ impl ViperClient {
     // shape or way, but I'm not sure yet... it returns a threshold
     // of sorts. I'm assuming it opens something for 90 seconds ...
     // ... but what?
-    pub fn ctpp(&mut self, apt_address: &String) -> ByteResult {
+    //
+    // Notes:
+    // - It only returns correctly once for whatever apt_address
+    // you fill in.
+    // - Each consecutive call it borks for some reason and returns
+    // what I think is a fault response
+    // - All calls featuring apt-addresses and what not are all
+    // using the same control bits (So it doesn't tick further).
+    // (Perhaps write a separate struct here because it's getting a bit
+    // weird)
+    pub fn ctpp(&mut self, vip: &serde_json::Value) -> ByteResult {
         self.tick();
 
-        let pre = Command::preflight("CTPP", &self.control);
+        let apt_address = format!("{}{}",
+                                  vip["apt-address"].as_str().unwrap(),
+                                  vip["apt-subaddress"]);
+
         let apt_b = apt_address.as_bytes();
 
         let total = [
-            &pre,
-            &vec![10, 0, 0, 0],
+            &vec![0, 10, 0, 0, 0],
             apt_b,
             &[0]
         ].concat();
 
-        match self.execute(&total) {
-            Ok(aut) => {
+        let pre = Command::cmd("CTPP", &total[..],  &self.control);
+        let tcp_bytes = [&pre[..], &total].concat();
+
+        println!("REQ: {:02x?}", tcp_bytes);
+
+        match self.execute(&tcp_bytes) {
+            Ok(com_b) => {
                 let json_str = str::from_utf8(&com_b).unwrap();
-                Ok(serde_json::from_str(json_str).unwrap())
+
+                if json_str.starts_with("{") {
+                    Ok(serde_json::from_str(json_str).unwrap())
+                } else {
+                    Err(
+                        io::Error::new(
+                            io::ErrorKind::Other,
+                            format!("Fault: {:02x?}", com_b)
+                        )
+                    )
+                }
             },
             Err(e) => Err(e)
         }
+    }
+
+    pub fn release_control(&mut self) -> ByteResult {
+        let total = Command::release(&self.control);
+
+        self.execute(&total)
+    }
+
+    // No idea what this does either tbh
+    pub fn hook_apts(&mut self, vip: &serde_json::Value) -> ByteResult {
+        let apt_address = vip["apt-address"].as_str().unwrap();
+        let apt_address_with_sub = format!("{}{}",
+                                           apt_address,
+                                           vip["apt-subaddress"]);
+
+        let start_bytes = [0, 6, 52, 0];
+        let control = self.control;
+        let next = [
+            192, 24, 60, 233, 214, 109, 0, 17,
+            0, 64, 123, 143
+        ];
+
+        let total = [
+            &start_bytes[..],
+            &control[..],
+            &[0],
+            &next,
+            apt_address_with_sub.as_bytes(),
+            &[0, 16, 14],
+            &[0, 0, 0, 0, 255, 255, 255, 255],
+            apt_address_with_sub.as_bytes(),
+            &[0],
+            apt_address.as_bytes(),
+            &[0, 0]
+        ].concat();
+
+        self.execute(&total)
+    }
+
+    pub fn cspb(&mut self) -> ByteResult {
+        self.tick();
+
+        let pre = Command::preflight("CSPB", &self.control);
+        self.execute(&pre)
     }
 
     // Move the control byte 1 ahead
@@ -101,7 +172,7 @@ impl ViperClient {
 
         let pre = Command::preflight(command, &self.control);
         let com = Command::make(
-            self.command_json(command),
+            self.command_json(command).as_bytes(),
             &self.control
         );
 
@@ -158,28 +229,62 @@ struct Command { }
 
 impl Command {
     fn preflight(command: &'static str, control: &[u8]) -> Vec<u8> {
-        let b_comm = command.as_bytes();
-
-        [&COMMAND_PREFIX, &b_comm[..], &control[..]].concat()
+        Command::cmd(command, &[], control)
     }
 
-    fn make(com: String, control: &[u8]) -> Vec<u8> {
-        let b_com = com.as_bytes();
-        let second = b_com.len() / 255;
-        let length = (b_com.len() % 255) - second;
+    fn cmd(command: &'static str,
+           extra: &[u8],
+           control: &[u8]) -> Vec<u8> {
 
-        let command_prefix = [
+        let b = command.as_bytes();
+
+        let total = [
+            &COMMAND_HEADER,
+            &b[..],
+            &control[..],
+            &extra[..]
+        ].concat();
+
+        let (length, second) = Command::byte_lengths(&total);
+        let header = [0, 6, length, second, 0, 0, 0, 0];
+
+        [&header, &total[..]].concat()
+    }
+
+    fn release(control: &[u8]) -> Vec<u8> {
+        let total = [
+            &UNKNOWN_HEADER,
+            &control[0..2],
+        ].concat();
+
+        let (length, second) = Command::byte_lengths(&total);
+        let header = [0, 6, length, second, 0, 0, 0, 0];
+
+        [&header, &total[..]].concat()
+    }
+
+    fn make(b_com: &[u8], control: &[u8]) -> Vec<u8> {
+        let (length, second) = Command::byte_lengths(b_com);
+
+        let header = [
             0,
             6,
-            length as u8,
-            second as u8,
+            length,
+            second,
             control[0],
             control[1],
             control[2],
             0
         ];
 
-        [&command_prefix, &b_com[..]].concat()
+        [&header, &b_com[..]].concat()
+    }
+
+    fn byte_lengths(bytes: &[u8]) -> (u8, u8) {
+        let second = bytes.len() / 255;
+        let length = (bytes.len() % 255) - second;
+
+        (length as u8, second as u8)
     }
 }
 
@@ -204,10 +309,22 @@ mod tests {
         for (byte_length, b2, b3) in list {
             let mut s = String::from("A");
             s = s.repeat(byte_length);
-            let b = Command::make(s, &control);
+            let b = Command::make(s.as_bytes(), &control);
             assert_eq!(b[2], b2);
             assert_eq!(b[3], b3);
         }
+    }
+
+    #[test]
+    fn test_command_make() {
+        let control = [1, 2, 0];
+        let b = Command::cmd("UCFG", &[], &control);
+        assert_eq!(b[2], 15);
+        assert_eq!(b[3], 0);
+
+        let b = Command::cmd("UCFG", &[10, 10, 10], &control);
+        assert_eq!(b[2], 18);
+        assert_eq!(b[3], 0);
     }
 
     #[test]
@@ -267,7 +384,7 @@ mod tests {
 
         let pre = Command::preflight("UCFG", &client.control);
         let r = client.execute(&pre).unwrap();
-        assert_eq!(&r[0..8], &COMMAND_PREFIX[8..]);
+        assert_eq!(&r[0..8], &COMMAND_HEADER[..]);
     }
 
     #[test]
@@ -292,7 +409,7 @@ mod tests {
         });
 
         let aut = Command::make(
-            client.command_json("UAUT"),
+            client.command_json("UAUT").as_bytes(),
             &client.control
         );
         let r = client.execute(&aut).unwrap();
@@ -319,7 +436,13 @@ mod tests {
             socket.write(&[&head, &buf[..]].concat()).unwrap();
         });
 
-        let r = client.ctpp(&String::from("SB000011")).unwrap();
-        assert_eq!(r.len(), 15);
+        let data = r#"
+            {
+                "apt-address":"SB0000011",
+                "apt-subaddress": 2
+            }
+        "#;
+        let v: serde_json::Value = serde_json::from_str(data).unwrap();
+        _ = client.ctpp(&v);
     }
 }

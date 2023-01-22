@@ -42,13 +42,18 @@ fn main() {
             let cfg = client.ucfg().unwrap();
             println!("{:?}", cfg.to_string());
             println!("{:?}", client.info().unwrap().to_string());
-            println!("{:?}", client.frcg().unwrap().to_string());
-            // This returns raw bytes:
-            let apt_address = format!("{}{}",
-                                      cfg["vip"]["apt-address"],
-                                      cfg["vip"]["apt-subaddress"]);
+            //println!("{:?}", client.frcg().unwrap().to_string());
 
-            println!("{:02x?}", client.ctpp(&apt_address).unwrap());
+            // This returns raw bytes or JSON:
+            println!("CTPP: {:02x?}", client.ctpp(&cfg["vip"]));
+            //println!("HOOKS: {:02x?}", client.hook_apts(&cfg["vip"]));
+            //println!("RELEASE: {:02x?}", client.release_control());
+
+            // Hi :)
+            //println!("{:02x?}", client.cspb());
+
+            // Perhaps print UCFG again: ??
+            //println!("{:?}", client.ucfg());
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {
