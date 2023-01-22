@@ -20,6 +20,7 @@ pub struct ViperClient {
 }
 
 type CommandResult = Result<serde_json::Value, io::Error>;
+type ByteResult = Result<Vec<u8>, io::Error>;
 
 impl ViperClient {
     pub fn new(ip: &String, port: &String, token: &String) -> ViperClient {
@@ -42,20 +43,52 @@ impl ViperClient {
         }
     }
 
+    // This command is used to authorize and create a session
     pub fn uaut(&mut self) -> CommandResult {
         self.json_command("UAUT")
     }
 
+    // This command returns the configuration
     pub fn ucfg(&mut self) -> CommandResult {
         self.json_command("UCFG")
     }
 
+    // This command returns the information
     pub fn info(&mut self) -> CommandResult {
         self.json_command("INFO")
     }
 
+    // This command (and this is best guess) return information
+    // related to face recognition.
     pub fn frcg(&mut self) -> CommandResult {
         self.json_command("FRCG")
+    }
+
+    // This command does something but I couldn't possibly tell
+    // what it does. I'm assuming this is related to the camera in some
+    // shape or way, but I'm not sure yet... it returns a threshold
+    // of sorts. I'm assuming it opens something for 90 seconds ...
+    // ... but what?
+    pub fn ctpp(&mut self, apt_address: &String) -> ByteResult {
+        self.tick();
+
+        let pre = Command::preflight("CTPP", &self.control);
+        let apt_b = apt_address.as_bytes();
+
+        let total = [
+            &pre,
+            &vec![10, 0, 0, 0],
+            apt_b,
+            &[0]
+        ].concat();
+
+        match self.execute(&total) {
+            Ok(aut) => {
+                let json_str = str::from_utf8(&com_b).unwrap();
+                Ok(serde_json::from_str(json_str).unwrap())
+            },
+            Err(e) => Err(e)
+        }
     }
 
     // Move the control byte 1 ahead
@@ -84,7 +117,7 @@ impl ViperClient {
         }
     }
 
-    fn execute(&mut self, b: &[u8]) -> Result<Vec<u8>, io::Error> {
+    fn execute(&mut self, b: &[u8]) -> ByteResult {
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
@@ -264,5 +297,29 @@ mod tests {
         );
         let r = client.execute(&aut).unwrap();
         assert_eq!(r.len(), 83);
+    }
+
+    #[test]
+    fn test_ctpp() {
+        let listener = TcpListener::bind("127.0.0.1:3336").unwrap();
+        let mut client = ViperClient::new(
+            &String::from("127.0.0.1"),
+            &String::from("3336"),
+            &String::from("ABCDEF")
+        );
+
+        thread::spawn(move || {
+            let (mut socket, _addr) = listener.accept().unwrap();
+            let mut head = [0; 8];
+            socket.read(&mut head).unwrap();
+
+            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let mut buf = vec![0; bl];
+            socket.read(&mut buf).unwrap();
+            socket.write(&[&head, &buf[..]].concat()).unwrap();
+        });
+
+        let r = client.ctpp(&String::from("SB000011")).unwrap();
+        assert_eq!(r.len(), 15);
     }
 }
