@@ -7,8 +7,8 @@ const POLL_TIMEOUT: u64 = 750;
 pub struct Device {}
 
 impl Device {
-    pub fn poll(doorbell_ip: &'static str, doorbell_port: u16) -> bool {
-        let location = format!("{}:{}", doorbell_ip, doorbell_port);
+    pub fn poll(ip: &String, port: &String) -> bool {
+        let location = format!("{}:{}", ip, port);
         let duration = Duration::from_millis(POLL_TIMEOUT);
         let addr = location.to_socket_addrs().unwrap().next().unwrap();
 

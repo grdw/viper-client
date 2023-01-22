@@ -22,7 +22,7 @@ pub struct ViperClient {
 type CommandResult = Result<serde_json::Value, io::Error>;
 
 impl ViperClient {
-    pub fn new(ip: &'static str, port: u16, token: &String) -> ViperClient {
+    pub fn new(ip: &String, port: &String, token: &String) -> ViperClient {
         let doorbell = format!("{}:{}", ip, port);
         let stream = TcpStream::connect(doorbell)
             .expect("Doorbell unavailable");
@@ -190,8 +190,8 @@ mod tests {
     fn test_execute() {
         let listener = TcpListener::bind("127.0.0.1:3333").unwrap();
         let mut client = ViperClient::new(
-            "127.0.0.1",
-            3333,
+            &String::from("127.0.0.1"),
+            &String::from("3333"),
             &String::from("ABCDEF")
         );
 
@@ -215,8 +215,8 @@ mod tests {
     fn test_make_command() {
         let listener = TcpListener::bind("127.0.0.1:3334").unwrap();
         let mut client = ViperClient::new(
-            "127.0.0.1",
-            3334,
+            &String::from("127.0.0.1"),
+            &String::from("3334"),
             &String::from("ABCDEF")
         );
 
@@ -241,8 +241,8 @@ mod tests {
     fn test_make_uat_command() {
         let listener = TcpListener::bind("127.0.0.1:3335").unwrap();
         let mut client = ViperClient::new(
-            "127.0.0.1",
-            3335,
+            &String::from("127.0.0.1"),
+            &String::from("3335"),
             &String::from("ABCDEF")
         );
 

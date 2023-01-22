@@ -2,18 +2,19 @@ mod device;
 mod viper_client;
 
 use device::Device;
+use dotenv::dotenv;
 use std::env;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::{thread, time::Duration};
 use viper_client::ViperClient;
 
-const TOKEN: &'static str = "TOKEN";
-const DOORBELL_IP: &'static str = "192.168.1.9";
-const DOORBELL_PORT: u16 = 64100;
-
 fn main() {
-    let token = env::var(TOKEN).unwrap();
+    dotenv().ok();
+
+    let doorbell_ip = env::var("DOORBELL_IP").unwrap();
+    let doorbell_port = env::var("DOORBELL_PORT").unwrap();
+    let token = env::var("TOKEN").unwrap();
     let running = Arc::new(AtomicBool::new(true));
     let r = running.clone();
 
@@ -25,14 +26,14 @@ fn main() {
 
     let mut prev = false;
     while running.load(Ordering::SeqCst) {
-        let is_up = Device::poll(DOORBELL_IP, DOORBELL_PORT);
+        let is_up = Device::poll(&doorbell_ip, &doorbell_port);
 
         if is_up && !prev {
             println!("Connected!");
 
             let mut client = ViperClient::new(
-                DOORBELL_IP,
-                DOORBELL_PORT,
+                &doorbell_ip,
+                &doorbell_port,
                 &token
             );
             println!("{:?}", client.uaut());
