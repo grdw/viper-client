@@ -1,5 +1,6 @@
 use std::fs;
 use std::io;
+use std::str;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
@@ -17,6 +18,8 @@ pub struct ViperClient {
     token: String,
     control: [u8; 3]
 }
+
+type CommandResult = Result<serde_json::Value, io::Error>;
 
 impl ViperClient {
     pub fn new(ip: &'static str, port: u16, token: &String) -> ViperClient {
@@ -39,20 +42,20 @@ impl ViperClient {
         }
     }
 
-    pub fn uaut(&mut self) -> Result<String, io::Error> {
-        self.execute_command("UAUT")
+    pub fn uaut(&mut self) -> CommandResult {
+        self.json_command("UAUT")
     }
 
-    pub fn ucfg(&mut self) -> Result<String, io::Error> {
-        self.execute_command("UCFG")
+    pub fn ucfg(&mut self) -> CommandResult {
+        self.json_command("UCFG")
     }
 
-    pub fn info(&mut self) -> Result<String, io::Error> {
-        self.execute_command("INFO")
+    pub fn info(&mut self) -> CommandResult {
+        self.json_command("INFO")
     }
 
-    pub fn frcg(&mut self) -> Result<String, io::Error> {
-        self.execute_command("FRCG")
+    pub fn frcg(&mut self) -> CommandResult {
+        self.json_command("FRCG")
     }
 
     // Move the control byte 1 ahead
@@ -60,7 +63,7 @@ impl ViperClient {
         self.control[0] += 1
     }
 
-    fn execute_command(&mut self, command: &'static str) -> Result<String, io::Error> {
+    fn json_command(&mut self, command: &'static str) -> CommandResult {
         self.tick();
 
         let pre = Command::preflight(command, &self.control);
@@ -73,10 +76,9 @@ impl ViperClient {
         let r = self.execute(&com);
 
         match r {
-            Ok(aut_b) => {
-                let relevant_bytes = aut_b.to_vec();
-                let json = String::from_utf8(relevant_bytes).unwrap();
-                Ok(json)
+            Ok(com_b) => {
+                let json_str = str::from_utf8(&com_b).unwrap();
+                Ok(serde_json::from_str(json_str).unwrap())
             },
             Err(e) => Err(e)
         }
