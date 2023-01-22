@@ -41,19 +41,18 @@ fn main() {
             println!("{:?}", client.uaut().unwrap().to_string());
             let cfg = client.ucfg().unwrap();
             println!("{:?}", cfg.to_string());
-            println!("{:?}", client.info().unwrap().to_string());
             //println!("{:?}", client.frcg().unwrap().to_string());
 
             // This returns raw bytes or JSON:
             println!("CTPP: {:02x?}", client.ctpp(&cfg["vip"]));
-            //println!("HOOKS: {:02x?}", client.hook_apts(&cfg["vip"]));
+            //println!("{:02x?}", client.cspb());
+            println!("{:?}", client.info().unwrap().to_string());
             //println!("RELEASE: {:02x?}", client.release_control());
 
             // Hi :)
-            //println!("{:02x?}", client.cspb());
 
             // Perhaps print UCFG again: ??
-            //println!("{:?}", client.ucfg());
+            // println!("{:?}", client.ucfg());
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {

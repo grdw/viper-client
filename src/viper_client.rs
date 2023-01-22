@@ -64,21 +64,34 @@ impl ViperClient {
         self.json_command("FRCG")
     }
 
-    // This command does something but I couldn't possibly tell
+    // This command does something.. but I couldn't possibly tell
     // what it does. I'm assuming this is related to the camera in some
     // shape or way, but I'm not sure yet... it returns a threshold
     // of sorts. I'm assuming it opens something for 90 seconds ...
     // ... but what?
     //
     // Notes:
-    // - It only returns correctly once for whatever apt_address
-    // you fill in.
     // - Each consecutive call it borks for some reason and returns
     // what I think is a fault response
     // - All calls featuring apt-addresses and what not are all
     // using the same control bits (So it doesn't tick further).
     // (Perhaps write a separate struct here because it's getting a bit
     // weird)
+    //
+    // Debug notes:
+    // This opens a channel of sorts ... but a TPP channel? Hur hur
+    // Toilet paper channel.
+    //
+    // Also how does this one close? I guess automatically as soon
+    // as the doorbell disconnects from the internet.
+    // This one either responds with nothing. Just an ACK with
+    // the control bytes.
+    //
+    // All subsequent CTPP requests use the same control bytes,
+    // they will move over the same TcpStream, but they all of
+    // a sudden switch protocol midway through the result.
+    // I'm not sure how any of this works, but I'll have to analyze
+    // how and what and why.
     pub fn ctpp(&mut self, vip: &serde_json::Value) -> ByteResult {
         self.tick();
 
@@ -97,60 +110,12 @@ impl ViperClient {
         let pre = Command::cmd("CTPP", &total[..],  &self.control);
         let tcp_bytes = [&pre[..], &total].concat();
 
-        println!("REQ: {:02x?}", tcp_bytes);
-
-        match self.execute(&tcp_bytes) {
-            Ok(com_b) => {
-                let json_str = str::from_utf8(&com_b).unwrap();
-
-                if json_str.starts_with("{") {
-                    Ok(serde_json::from_str(json_str).unwrap())
-                } else {
-                    Err(
-                        io::Error::new(
-                            io::ErrorKind::Other,
-                            format!("Fault: {:02x?}", com_b)
-                        )
-                    )
-                }
-            },
-            Err(e) => Err(e)
-        }
+        // Perhaps store control somewhere?
+        self.execute(&tcp_bytes)
     }
 
     pub fn release_control(&mut self) -> ByteResult {
         let total = Command::release(&self.control);
-
-        self.execute(&total)
-    }
-
-    // No idea what this does either tbh
-    pub fn hook_apts(&mut self, vip: &serde_json::Value) -> ByteResult {
-        let apt_address = vip["apt-address"].as_str().unwrap();
-        let apt_address_with_sub = format!("{}{}",
-                                           apt_address,
-                                           vip["apt-subaddress"]);
-
-        let start_bytes = [0, 6, 52, 0];
-        let control = self.control;
-        let next = [
-            192, 24, 60, 233, 214, 109, 0, 17,
-            0, 64, 123, 143
-        ];
-
-        let total = [
-            &start_bytes[..],
-            &control[..],
-            &[0],
-            &next,
-            apt_address_with_sub.as_bytes(),
-            &[0, 16, 14],
-            &[0, 0, 0, 0, 255, 255, 255, 255],
-            apt_address_with_sub.as_bytes(),
-            &[0],
-            apt_address.as_bytes(),
-            &[0, 0]
-        ].concat();
 
         self.execute(&total)
     }
