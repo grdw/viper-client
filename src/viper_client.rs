@@ -101,17 +101,13 @@ impl ViperClient {
     }
 
     fn command_json(&self, command: &'static str) -> String {
+        let path = format!("commands/{}.json", command);
+        let raw_com = fs::read_to_string(&path).unwrap();
+
         match command {
-            "UAUT" => {
-                let raw_com = fs::read_to_string("UAUT.json").unwrap();
-                raw_com.replace("USER-TOKEN", &self.token)
-            },
-            "UCFG" => fs::read_to_string("UCFG.json").unwrap(),
-            "INFO" => fs::read_to_string("INFO.json").unwrap(),
-            "FRCG" => fs::read_to_string("FRCG.json").unwrap(),
-            _ => {
-                panic!("Not available {}", command)
-            }
+            "UCFG" | "INFO" | "FRCG" => raw_com,
+            "UAUT" => raw_com.replace("USER-TOKEN", &self.token),
+            _ => panic!("Not available {}", command)
         }
     }
 
