@@ -37,6 +37,8 @@ fn main() {
             );
             println!("{:?}", client.uaut());
             println!("{:?}", client.ucfg());
+            println!("{:?}", client.info());
+            println!("{:?}", client.frcg());
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {
