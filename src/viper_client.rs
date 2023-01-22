@@ -1,3 +1,6 @@
+mod command;
+
+use command::Command;
 use std::fs;
 use std::io;
 use std::str;
@@ -6,12 +9,6 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 const TIMEOUT: u64 = 5000;
-// This is the command prefix I see flying by
-// every time
-const COMMAND_HEADER: [u8; 8] = [205, 171, 1,  0, 7, 0, 0, 0];
-// This is another header that's pretty consistent,
-// not sure what it's for tbh:
-const UNKNOWN_HEADER: [u8; 8] = [239, 1,   3,  0, 2, 0, 0, 0];
 
 pub struct ViperClient {
     stream: TcpStream,
@@ -158,7 +155,7 @@ impl ViperClient {
             Ok(_) => {
                 let mut head = [0; 8];
                 self.stream.read(&mut head).unwrap();
-                let buffer_size = Self::buffer_length(
+                let buffer_size = Command::buffer_length(
                     head[2],
                     head[3]
                 );
@@ -181,76 +178,6 @@ impl ViperClient {
             _ => panic!("Not available {}", command)
         }
     }
-
-    fn buffer_length(b2: u8, b3: u8) -> usize {
-        let b2 = b2 as usize;
-        let b3 = b3 as usize;
-
-        (b3 * 255) + b2 + b3
-    }
-}
-
-struct Command { }
-
-impl Command {
-    fn preflight(command: &'static str, control: &[u8]) -> Vec<u8> {
-        Command::cmd(command, &[], control)
-    }
-
-    fn cmd(command: &'static str,
-           extra: &[u8],
-           control: &[u8]) -> Vec<u8> {
-
-        let b = command.as_bytes();
-
-        let total = [
-            &COMMAND_HEADER,
-            &b[..],
-            &control[..],
-            &extra[..]
-        ].concat();
-
-        let (length, second) = Command::byte_lengths(&total);
-        let header = [0, 6, length, second, 0, 0, 0, 0];
-
-        [&header, &total[..]].concat()
-    }
-
-    fn release(control: &[u8]) -> Vec<u8> {
-        let total = [
-            &UNKNOWN_HEADER,
-            &control[0..2],
-        ].concat();
-
-        let (length, second) = Command::byte_lengths(&total);
-        let header = [0, 6, length, second, 0, 0, 0, 0];
-
-        [&header, &total[..]].concat()
-    }
-
-    fn make(b_com: &[u8], control: &[u8]) -> Vec<u8> {
-        let (length, second) = Command::byte_lengths(b_com);
-
-        let header = [
-            0,
-            6,
-            length,
-            second,
-            control[0],
-            control[1],
-            control[2],
-            0
-        ];
-
-        [&header, &b_com[..]].concat()
-    }
-
-    fn byte_lengths(bytes: &[u8]) -> (u8, u8) {
-        let second = bytes.len() / 255;
-        let length = (bytes.len() % 255) - second;
-
-        (length as u8, second as u8)
-    }
 }
 
 #[cfg(test)]
@@ -259,47 +186,6 @@ mod tests {
     use std::str;
     use std::thread;
     use std::net::TcpListener;
-
-    #[test]
-    fn test_content_length() {
-        let control = [1, 2, 0];
-        let list = vec![
-            (94, 94, 0),
-            (117, 117, 0),
-            (367, 111, 1),
-            (752, 240, 2),
-            (951, 183, 3)
-        ];
-
-        for (byte_length, b2, b3) in list {
-            let mut s = String::from("A");
-            s = s.repeat(byte_length);
-            let b = Command::make(s.as_bytes(), &control);
-            assert_eq!(b[2], b2);
-            assert_eq!(b[3], b3);
-        }
-    }
-
-    #[test]
-    fn test_command_make() {
-        let control = [1, 2, 0];
-        let b = Command::cmd("UCFG", &[], &control);
-        assert_eq!(b[2], 15);
-        assert_eq!(b[3], 0);
-
-        let b = Command::cmd("UCFG", &[10, 10, 10], &control);
-        assert_eq!(b[2], 18);
-        assert_eq!(b[3], 0);
-    }
-
-    #[test]
-    fn test_buffer_length() {
-        assert_eq!(ViperClient::buffer_length(94, 0), 94);
-        assert_eq!(ViperClient::buffer_length(109, 0), 109);
-        assert_eq!(ViperClient::buffer_length(103, 1), 359);
-        assert_eq!(ViperClient::buffer_length(232, 2), 744);
-        assert_eq!(ViperClient::buffer_length(175, 3), 943);
-    }
 
     #[test]
     fn test_execute() {
@@ -341,7 +227,7 @@ mod tests {
             let mut head = [0; 8];
             socket.read(&mut head).unwrap();
 
-            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let bl = Command::buffer_length(head[2], head[3]);
             let mut buf = vec![0; bl];
             socket.read(&mut buf).unwrap();
             socket.write(&[&head, &buf[..]].concat()).unwrap();
@@ -349,7 +235,7 @@ mod tests {
 
         let pre = Command::preflight("UCFG", &client.control);
         let r = client.execute(&pre).unwrap();
-        assert_eq!(&r[0..8], &COMMAND_HEADER[..]);
+        assert_eq!(&r[0..8], &[205, 171, 1,  0, 7, 0, 0, 0]);
     }
 
     #[test]
@@ -367,7 +253,7 @@ mod tests {
             let mut head = [0; 8];
             socket.read(&mut head).unwrap();
 
-            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let bl = Command::buffer_length(head[2], head[3]);
             let mut buf = vec![0; bl];
             socket.read(&mut buf).unwrap();
             socket.write(&[&head, &buf[..]].concat()).unwrap();
@@ -395,7 +281,7 @@ mod tests {
             let mut head = [0; 8];
             socket.read(&mut head).unwrap();
 
-            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let bl = Command::buffer_length(head[2], head[3]);
             let mut buf = vec![0; bl];
             socket.read(&mut buf).unwrap();
             socket.write(&[&head, &buf[..]].concat()).unwrap();
