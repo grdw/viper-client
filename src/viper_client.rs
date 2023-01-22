@@ -1,4 +1,5 @@
 use std::fs;
+use std::io;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
@@ -38,14 +39,20 @@ impl ViperClient {
         }
     }
 
-    pub fn uaut(&mut self) -> Option<String> {
-        self.tick();
+    pub fn uaut(&mut self) -> Result<String, io::Error> {
         self.execute_command("UAUT")
     }
 
-    pub fn ucfg(&mut self) -> Option<String> {
-        self.tick();
+    pub fn ucfg(&mut self) -> Result<String, io::Error> {
         self.execute_command("UCFG")
+    }
+
+    pub fn info(&mut self) -> Result<String, io::Error> {
+        self.execute_command("INFO")
+    }
+
+    pub fn frcg(&mut self) -> Result<String, io::Error> {
+        self.execute_command("FRCG")
     }
 
     // Move the control byte 1 ahead
@@ -53,26 +60,29 @@ impl ViperClient {
         self.control[0] += 1
     }
 
-    fn execute_command(&mut self, command: &'static str) -> Option<String> {
+    fn execute_command(&mut self, command: &'static str) -> Result<String, io::Error> {
+        self.tick();
+
         let pre = Command::preflight(command, &self.control);
         let com = Command::make(
             self.command_json(command),
             &self.control
         );
 
-        self.execute(&pre).unwrap();
+        self.execute(&pre)?;
         let r = self.execute(&com);
 
-        if let Some(aut_b) = r {
-            let relevant_bytes = aut_b.to_vec();
-            let json = String::from_utf8(relevant_bytes).unwrap();
-            Some(json)
-        } else {
-            None
+        match r {
+            Ok(aut_b) => {
+                let relevant_bytes = aut_b.to_vec();
+                let json = String::from_utf8(relevant_bytes).unwrap();
+                Ok(json)
+            },
+            Err(e) => Err(e)
         }
     }
 
-    fn execute(&mut self, b: &[u8]) -> Option<Vec<u8>> {
+    fn execute(&mut self, b: &[u8]) -> Result<Vec<u8>, io::Error> {
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
@@ -84,9 +94,9 @@ impl ViperClient {
 
                 let mut buf = vec![0; buffer_size];
                 self.stream.read(&mut buf).unwrap();
-                Some(buf)
+                Ok(buf)
             },
-            Err(_) => None
+            Err(e) => Err(e)
         }
     }
 
@@ -97,6 +107,8 @@ impl ViperClient {
                 raw_com.replace("USER-TOKEN", &self.token)
             },
             "UCFG" => fs::read_to_string("UCFG.json").unwrap(),
+            "INFO" => fs::read_to_string("INFO.json").unwrap(),
+            "FRCG" => fs::read_to_string("FRCG.json").unwrap(),
             _ => {
                 panic!("Not available {}", command)
             }
