@@ -1,6 +1,8 @@
 mod command;
+mod ctpp;
 
 use command::Command;
+use ctpp::CTPP;
 use std::fs;
 use std::io;
 use std::str;
@@ -18,6 +20,7 @@ pub struct ViperClient {
 
 type CommandResult = Result<serde_json::Value, io::Error>;
 type ByteResult = Result<Vec<u8>, io::Error>;
+type CTPPResult = Result<CTPP, io::Error>;
 
 impl ViperClient {
     pub fn new(ip: &String, port: &String, token: &String) -> ViperClient {
@@ -89,7 +92,7 @@ impl ViperClient {
     // a sudden switch protocol midway through the result.
     // I'm not sure how any of this works, but I'll have to analyze
     // how and what and why.
-    pub fn ctpp(&mut self, vip: &serde_json::Value) -> ByteResult {
+    pub fn ctpp(&mut self, vip: &serde_json::Value) -> CTPPResult {
         self.tick();
 
         let apt_address = format!("{}{}",
@@ -108,7 +111,12 @@ impl ViperClient {
         let tcp_bytes = [&pre[..], &total].concat();
 
         // Perhaps store control somewhere?
-        self.execute(&tcp_bytes)
+        match self.execute(&tcp_bytes) {
+            Ok(bytes) => {
+                Ok(CTPP::new(self.control))
+            },
+            Err(e) => Err(e)
+        }
     }
 
     pub fn release_control(&mut self) -> ByteResult {

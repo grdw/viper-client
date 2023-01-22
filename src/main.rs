@@ -41,7 +41,9 @@ fn main() {
             println!("{:?}", client.uaut().unwrap().to_string());
             let cfg = client.ucfg().unwrap();
             println!("{:?}", cfg.to_string());
-            //println!("{:?}", client.frcg().unwrap().to_string());
+
+            // This is used for facial recognition
+            println!("{:?}", client.frcg().unwrap().to_string());
 
             // This returns raw bytes or JSON:
             println!("CTPP: {:02x?}", client.ctpp(&cfg["vip"]));
