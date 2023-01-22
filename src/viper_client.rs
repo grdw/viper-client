@@ -39,12 +39,10 @@ impl ViperClient {
     }
 
     pub fn uaut(&mut self) -> Option<String> {
-        self.tick();
         self.execute_command("UAUT")
     }
 
     pub fn ucfg(&mut self) -> Option<String> {
-        self.tick();
         self.execute_command("UCFG")
     }
 
@@ -54,6 +52,8 @@ impl ViperClient {
     }
 
     fn execute_command(&mut self, command: &'static str) -> Option<String> {
+        self.tick();
+
         let pre = Command::preflight(command, &self.control);
         let com = Command::make(
             self.command_json(command),
