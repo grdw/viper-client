@@ -110,11 +110,8 @@ impl ViperClient {
         let pre = Command::cmd("CTPP", &total[..],  &self.control);
         let tcp_bytes = [&pre[..], &total].concat();
 
-        // Perhaps store control somewhere?
         match self.execute(&tcp_bytes) {
-            Ok(bytes) => {
-                Ok(CTPP::new(self.control))
-            },
+            Ok(bytes) => Ok(CTPP::new(self.control)),
             Err(e) => Err(e)
         }
     }
