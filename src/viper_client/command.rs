@@ -1,14 +1,98 @@
+use serde::{Deserialize, Serialize};
 // This is the command prefix I see flying by
 // every time
 const COMMAND_HEADER: [u8; 8] = [205, 171, 1,  0, 7, 0, 0, 0];
 // This is another header that's pretty consistent,
 // not sure what it's for tbh:
-const UNKNOWN_HEADER: [u8; 8] = [239, 1,   3,  0, 2, 0, 0, 0];
+// const UNKNOWN_HEADER: [u8; 8] = [239, 1,   3,  0, 2, 0, 0, 0];
+
+pub enum CommandKind {
+    UAUT(String),
+    UCFG(String),
+    INFO,
+    FRCG
+}
 
 pub struct Command { }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct UAUT {
+    message: String,
+    message_type: String,
+    message_id: u8,
+    user_token: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct UCFG {
+    message: String,
+    message_type: String,
+    message_id: u8,
+    addressbooks: String
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct Blank {
+    message: String,
+    message_type: String,
+    message_id: u8
+}
+
 impl Command {
-    pub fn preflight(command: &'static str, control: &[u8]) -> Vec<u8> {
+    pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
+        match kind {
+            CommandKind::UAUT(token) => {
+                let uaut = UAUT {
+                    message: String::from("access"),
+                    message_type: String::from("request"),
+                    message_id: 1,
+                    user_token: token
+                };
+
+                let json = serde_json::to_string(&uaut).unwrap();
+                Command::make(&json.as_bytes(), control)
+            },
+
+            CommandKind::UCFG(addressbooks) => {
+                let ucfg = UCFG {
+                    message: String::from("get-configuration"),
+                    message_type: String::from("request"),
+                    message_id: 2,
+                    addressbooks: addressbooks
+                };
+
+                let json = serde_json::to_string(&ucfg).unwrap();
+                Command::make(&json.as_bytes(), control)
+            },
+
+            CommandKind::INFO => {
+                let info = Blank {
+                    message: String::from("server-info"),
+                    message_type: String::from("request"),
+                    message_id: 1
+                };
+
+                let json = serde_json::to_string(&info).unwrap();
+                Command::make(&json.as_bytes(), control)
+            },
+
+            CommandKind::FRCG => {
+                let frcg = Blank {
+                    message: String::from("rcg-get-params"),
+                    message_type: String::from("request"),
+                    message_id: 1
+                };
+
+                let json = serde_json::to_string(&frcg).unwrap();
+                Command::make(&json.as_bytes(), control)
+            }
+        }
+    }
+
+    pub fn preflight(command: &String, control: &[u8]) -> Vec<u8> {
         Command::cmd(command, &[], control)
     }
 
@@ -19,7 +103,7 @@ impl Command {
         (b3 * 255) + b2 + b3
     }
 
-    pub fn cmd(command: &'static str,
+    pub fn cmd(command: &String,
            extra: &[u8],
            control: &[u8]) -> Vec<u8> {
 
@@ -31,14 +115,6 @@ impl Command {
             &control[..],
             &extra[..]
         ].concat();
-
-        let header = Command::header(&total);
-
-        [&header, &total[..]].concat()
-    }
-
-    pub fn release(control: &[u8]) -> Vec<u8> {
-        let total = [&UNKNOWN_HEADER, &control[0..2]].concat();
 
         let header = Command::header(&total);
 
@@ -73,6 +149,14 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_for_kind() {
+        let control = [1, 2, 0];
+
+        let cmd = Command::for_kind(CommandKind::UAUT("token".to_string()), &control);
+        assert_eq!(cmd.len(), 89);
+    }
+
+    #[test]
     fn test_content_length() {
         let control = [1, 2, 0];
         let list = vec![
@@ -95,11 +179,12 @@ mod tests {
     #[test]
     fn test_command_make() {
         let control = [1, 2, 0];
-        let b = Command::cmd("UCFG", &[], &control);
+        let command = String::from("UCFG");
+        let b = Command::cmd(&command, &[], &control);
         assert_eq!(b[2], 15);
         assert_eq!(b[3], 0);
 
-        let b = Command::cmd("UCFG", &[10, 10, 10], &control);
+        let b = Command::cmd(&command, &[10, 10, 10], &control);
         assert_eq!(b[2], 18);
         assert_eq!(b[3], 0);
     }
