@@ -13,11 +13,11 @@ impl Channel {
         }
     }
 
-    pub fn open(&mut self) -> Vec<u8> {
+    pub fn open(&self) -> Vec<u8> {
         Command::preflight(&self.command, &self.control)
     }
 
-    pub fn com(&mut self, kind: CommandKind) -> Vec<u8> {
+    pub fn com(&self, kind: CommandKind) -> Vec<u8> {
         Command::for_kind(kind, &self.control)
     }
 }

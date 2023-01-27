@@ -57,13 +57,13 @@ fn on_connect(doorbell_ip: &String,
     let ucfg = CommandKind::UCFG("none".to_string());
     let ucfg_all = CommandKind::UCFG("all".to_string());
 
-    let mut uaut_channel = client.channel("UAUT");
+    let uaut_channel = client.channel("UAUT");
     println!("\n === Authorize:");
     client.execute(&uaut_channel.open())?;
     let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
     println!("{:?}", ViperClient::json(&uaut_bytes));
 
-    let mut ucfg_channel = client.channel("UCFG");
+    let ucfg_channel = client.channel("UCFG");
     let ucfg_json = {
         println!("\n === Config:");
         client.execute(&ucfg_channel.open())?;
@@ -72,13 +72,13 @@ fn on_connect(doorbell_ip: &String,
     };
 
     println!("\n === Info:");
-    let mut info_channel = client.channel("INFO");
+    let info_channel = client.channel("INFO");
     client.execute(&info_channel.open())?;
     let info_bytes = client.execute(&info_channel.com(CommandKind::INFO))?;
     println!("{:?}", ViperClient::json(&info_bytes));
 
     println!("\n === Facial rec:");
-    let mut frcg_channel = client.channel("FRCG");
+    let frcg_channel = client.channel("FRCG");
     client.execute(&frcg_channel.open())?;
     let frcg_bytes = client.execute(&frcg_channel.com(CommandKind::FRCG))?;
     println!("{:?}", ViperClient::json(&frcg_bytes));
@@ -93,7 +93,7 @@ fn on_connect(doorbell_ip: &String,
     client.execute(&ctpp_channel.open())?;
 
     println!("\n === CSPB:");
-    let mut cspb_channel = client.channel("CSPB");
+    let cspb_channel = client.channel("CSPB");
     let cspb_bytes = client.execute(&cspb_channel.open())?;
     println!("{:?}", cspb_bytes);
 
