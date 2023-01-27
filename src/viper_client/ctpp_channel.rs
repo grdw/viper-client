@@ -1,5 +1,4 @@
 use super::Command;
-use rand::Rng;
 use rand::distributions::{Distribution, Uniform};
 
 const R0_PREFIX: [u8; 2] = [0, 24];
@@ -10,20 +9,20 @@ const R1_PREFIX: [u8; 2] = [32, 24];
 //const R3_SUFFIX: [u8; 10] = [0, 8, 0, 3, 73, 0, 39, 0, 0, 0];
 
 #[derive(Debug)]
-pub struct CTPP {
+pub struct CTPPChannel {
     control: [u8; 3],
     bitmask: Vec<u8>,
     apt: String,
     sub: String
 }
 
-impl CTPP {
-    pub fn new(control: [u8; 3], apt: String, sub: String) -> CTPP {
-        CTPP {
-            control: control,
+impl CTPPChannel {
+    pub fn new(control: &[u8; 3], apt: String, sub: String) -> CTPPChannel {
+        CTPPChannel {
+            control: *control,
             apt: apt,
             sub: sub,
-            bitmask: CTPP::generate_mask(4)
+            bitmask: CTPPChannel::generate_mask(4)
         }
     }
 
@@ -34,6 +33,16 @@ impl CTPP {
         (0..size)
             .map(|_| die.sample(&mut rng))
             .collect::<Vec<u8>>()
+    }
+
+    pub fn open(&self) -> Vec<u8> {
+        let apt_b = format!("\0\0\0{}\0", self.sub);
+        let total = [
+            &vec![0, 10],
+            apt_b.as_bytes()
+        ].concat();
+
+        Command::cmd(&String::from("CTPP"), &total[..], &self.control)
     }
 
     // This is the initial call that's made right after the CTPP and CSPB
@@ -47,7 +56,7 @@ impl CTPP {
             &prefix[..],
             &self.bitmask,
             &[0, 17, 0, 64],
-            &CTPP::generate_mask(3),
+            &CTPPChannel::generate_mask(3),
             &self.sub.as_bytes(),
             &suffix[..]
         ].concat();
@@ -87,7 +96,7 @@ impl CTPP {
     //      actuator: &String,
     //      other_actuator: &String) -> Vec<u8> {
 
-    //    let mask = CTPP::generate_mask(4);
+    //    let mask = CTPPChannel::generate_mask(4);
 
     //    let req = [
     //        &R2_PREFIX[..],
@@ -124,8 +133,8 @@ mod tests {
 
     #[test]
     fn test_template() {
-        let ctpp = CTPP::new(
-            [1, 2, 3],
+        let ctpp = CTPPChannel::new(
+            &[1, 2, 3],
             String::from("SB0000062"),
             String::from("SB000006")
         );
@@ -144,8 +153,8 @@ mod tests {
 
     #[test]
     fn test_connect_hs() {
-        let mut ctpp = CTPP::new(
-            [1, 2, 3],
+        let ctpp = CTPPChannel::new(
+            &[1, 2, 3],
             String::from("SB0000062"),
             String::from("SB000006")
         );
