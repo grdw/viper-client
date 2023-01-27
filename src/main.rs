@@ -53,11 +53,15 @@ fn main() {
             // This returns raw bytes or JSON:
             println!("\n === CTPP:");
             match client.ctpp(&cfg["vip"]) {
-                Ok(ctpp) => {
+                Ok(mut ctpp) => {
                     println!("\n === CSPB:");
                     println!("{:?}", client.cspb());
                     println!("\n === CTPP conn:");
-                    println!("{:?}", client.execute(&ctpp.connect()));
+                    println!("{:?}", client.execute(&ctpp.connect_hs()));
+                    println!("{:?}", client.execute(&ctpp.connect_reply()));
+                    println!("{:?}", client.execute(&ctpp.connect_second_reply()));
+                    //println!("{:?}", client.read_response());
+                    //println!("{:?}", client.read_response());
                 },
                 Err(err) => {
                     println!("Oops: {:?}", err)
