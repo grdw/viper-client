@@ -46,7 +46,14 @@ fn main() {
             println!("{:?}", client.frcg().unwrap().to_string());
 
             // This returns raw bytes or JSON:
-            println!("CTPP: {:02x?}", client.ctpp(&cfg["vip"]));
+            match client.ctpp(&cfg["vip"]) {
+                Ok(ctpp) => {
+                    ctpp.connect();
+                },
+                Err(err) => {
+                    println!("Oops: {:?}", err)
+                }
+            }
             //println!("{:02x?}", client.cspb());
             println!("{:?}", client.info().unwrap().to_string());
             //println!("RELEASE: {:02x?}", client.release_control());

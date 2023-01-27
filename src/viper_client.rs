@@ -64,54 +64,26 @@ impl ViperClient {
         self.json_command("FRCG")
     }
 
-    // This command does something.. but I couldn't possibly tell
-    // what it does. I'm assuming this is related to the camera in some
-    // shape or way, but I'm not sure yet... it returns a threshold
-    // of sorts. I'm assuming it opens something for 90 seconds ...
-    // ... but what?
-    //
-    // Notes:
-    // - Each consecutive call it borks for some reason and returns
-    // what I think is a fault response
-    // - All calls featuring apt-addresses and what not are all
-    // using the same control bits (So it doesn't tick further).
-    // (Perhaps write a separate struct here because it's getting a bit
-    // weird)
-    //
-    // Debug notes:
-    // This opens a channel of sorts ... but a TPP channel? Hur hur
-    // Toilet paper channel.
-    //
-    // Also how does this one close? I guess automatically as soon
-    // as the doorbell disconnects from the internet.
-    // This one either responds with nothing. Just an ACK with
-    // the control bytes.
-    //
-    // All subsequent CTPP requests use the same control bytes,
-    // they will move over the same TcpStream, but they all of
-    // a sudden switch protocol midway through the result.
-    // I'm not sure how any of this works, but I'll have to analyze
-    // how and what and why.
     pub fn ctpp(&mut self, vip: &serde_json::Value) -> CTPPResult {
         self.tick();
 
-        let apt_address = format!("{}{}",
-                                  vip["apt-address"].as_str().unwrap(),
-                                  vip["apt-subaddress"]);
-
-        let apt_b = apt_address.as_bytes();
+        let addr = vip["apt-address"].as_str().unwrap();
+        let sub = &vip["apt-subaddress"];
+        let apt_address = format!("{}{}", addr, sub);
+        let apt_b = format!("\0\0\0{}\0", apt_address);
 
         let total = [
-            &vec![0, 10, 0, 0, 0],
-            apt_b,
-            &[0]
+            &vec![0, 10],
+            apt_b.as_bytes()
         ].concat();
 
         let pre = Command::cmd("CTPP", &total[..],  &self.control);
         let tcp_bytes = [&pre[..], &total].concat();
 
         match self.execute(&tcp_bytes) {
-            Ok(bytes) => Ok(CTPP::new(self.control)),
+            Ok(bytes) => Ok(
+                CTPP::new(self.control, addr.to_string(), apt_address)
+            ),
             Err(e) => Err(e)
         }
     }

@@ -9,72 +9,75 @@ const R3_SUFFIX: [u8; 10] = [0, 8, 0, 3, 73, 0, 39, 0, 0, 0];
 #[derive(Debug)]
 pub struct CTPP {
     control: [u8; 3],
-    bitmask: Vec<u8>
+    bitmask: Vec<u8>,
+    apt: String,
+    sub: String
 }
 
 impl CTPP {
-    pub fn new(control: [u8; 3]) -> CTPP {
+    pub fn new(control: [u8; 3], apt: String, sub: String) -> CTPP {
         CTPP {
             control: control,
-            bitmask: CTPP::generate_mask()
+            apt: apt,
+            sub: sub,
+            bitmask: CTPP::generate_mask(4)
         }
     }
 
-    fn generate_mask() -> Vec<u8> {
+    fn generate_mask(size: usize) -> Vec<u8> {
         let mut rng = rand::thread_rng();
         let die = Uniform::from(1..255);
 
-        (0..4)
+        (0..size)
             .map(|_| die.sample(&mut rng))
             .collect::<Vec<u8>>()
     }
 
-    fn r1(&self,
-          actuator: &String,
-          other_actuator: &String) -> Vec<u8> {
-
+    // This is the initial call that's made right after the CTPP and CSPB
+    // call
+    // Question: do I need CSPB?
+    pub fn connect(&self) -> Vec<u8> {
         let prefix = [192, 24];
-        let suffix = [0, 16, 14, 0, 0];
+        let suffix = [0, 16, 14, 0, 0, 0, 0];
 
         let req = [
             &prefix[..],
             &self.bitmask,
-            &actuator.as_bytes(),
+            &[0, 17, 0, 64],
+            &CTPP::generate_mask(3),
+            &self.sub.as_bytes(),
             &suffix[..]
         ].concat();
 
-        return self.template(&req, actuator, other_actuator)
+        return self.template(&req, &self.sub, &self.apt)
     }
 
-    fn r2(&mut self,
-          actuator: &String,
-          other_actuator: &String) -> Vec<u8> {
+    //fn r2(&mut self, actuator: &String) -> Vec<u8> {
+    //    let mask = CTPP::generate_mask(4);
 
-        let mask = CTPP::generate_mask();
+    //    let req = [
+    //        &R2_PREFIX[..],
+    //        &mask[..],
+    //        &R2_SUFFIX[..]
+    //    ].concat();
 
-        let req = [
-            &R2_PREFIX[..],
-            &mask[..],
-            &R2_SUFFIX[..]
-        ].concat();
+    //    return self.template(&req, &self.sub, actuator)
+    //}
 
-        return self.template(&req, actuator, other_actuator)
-    }
+    //fn r3(&mut self,
+    //      actuator: &String,
+    //      other_actuator: &String) -> Vec<u8> {
 
-    fn r3(&mut self,
-          actuator: &String,
-          other_actuator: &String) -> Vec<u8> {
+    //    let mask = CTPP::generate_mask(4);
 
-        let mask = CTPP::generate_mask();
+    //    let req = [
+    //        &R2_PREFIX[..],
+    //        &mask[..],
+    //        &R3_SUFFIX[..]
+    //    ].concat();
 
-        let req = [
-            &R2_PREFIX[..],
-            &mask[..],
-            &R3_SUFFIX[..]
-        ].concat();
-
-        return self.template(&req, actuator, other_actuator)
-    }
+    //    return self.template(&req, actuator, other_actuator)
+    //}
 
     // All the CTPP requests follow the same template:
     fn template(&self,
@@ -102,7 +105,11 @@ mod tests {
 
     #[test]
     fn test_template() {
-        let ctpp = CTPP::new([1, 2, 3]);
+        let ctpp = CTPP::new(
+            [1, 2, 3],
+            String::from("SB0000062"),
+            String::from("SB000006")
+        );
         let t = ctpp.template(
             &[0, 0, 0, 0, 0, 0, 0, 0],
             &String::from("SB0000062"),
@@ -117,13 +124,14 @@ mod tests {
     }
 
     #[test]
-    fn test_r2() {
-        let mut ctpp = CTPP::new([1, 2, 3]);
-        let r2 = ctpp.r2(
-            &String::from("SB0000062"),
-            &String::from("SB000006")
+    fn test_connect() {
+        let mut ctpp = CTPP::new(
+            [1, 2, 3],
+            String::from("SB0000062"),
+            String::from("SB000006")
         );
+        let conn = ctpp.connect();
 
-        assert_eq!(r2.len(), 44)
+        assert_eq!(conn.len(), 60)
     }
 }
