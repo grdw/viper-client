@@ -1,3 +1,8 @@
+mod command;
+mod ctpp;
+
+use command::Command;
+use ctpp::CTPP;
 use std::fs;
 use std::io;
 use std::str;
@@ -6,12 +11,6 @@ use std::net::TcpStream;
 use std::time::Duration;
 
 const TIMEOUT: u64 = 5000;
-// This is the command prefix I see flying by
-// every time
-const COMMAND_PREFIX: [u8; 16] = [
-    0,   6,   15, 0, 0, 0, 0, 0,
-    205, 171, 1,  0, 7, 0, 0, 0
-];
 
 pub struct ViperClient {
     stream: TcpStream,
@@ -20,6 +19,8 @@ pub struct ViperClient {
 }
 
 type CommandResult = Result<serde_json::Value, io::Error>;
+type ByteResult = Result<Vec<u8>, io::Error>;
+type CTPPResult = Result<CTPP, io::Error>;
 
 impl ViperClient {
     pub fn new(ip: &String, port: &String, token: &String) -> ViperClient {
@@ -42,20 +43,61 @@ impl ViperClient {
         }
     }
 
+    // This command is used to authorize and create a session
     pub fn uaut(&mut self) -> CommandResult {
         self.json_command("UAUT")
     }
 
+    // This command returns the configuration
     pub fn ucfg(&mut self) -> CommandResult {
         self.json_command("UCFG")
     }
 
+    // This command returns the information
     pub fn info(&mut self) -> CommandResult {
         self.json_command("INFO")
     }
 
+    // This command (and this is best guess) return information
+    // related to face recognition.
     pub fn frcg(&mut self) -> CommandResult {
         self.json_command("FRCG")
+    }
+
+    pub fn ctpp(&mut self, vip: &serde_json::Value) -> CTPPResult {
+        self.tick();
+
+        let addr = vip["apt-address"].as_str().unwrap();
+        let sub = &vip["apt-subaddress"];
+        let apt_address = format!("{}{}", addr, sub);
+        let apt_b = format!("\0\0\0{}\0", apt_address);
+
+        let total = [
+            &vec![0, 10],
+            apt_b.as_bytes()
+        ].concat();
+
+        let tcp_bytes = Command::cmd("CTPP", &total[..],  &self.control);
+
+        match self.execute(&tcp_bytes) {
+            Ok(bytes) => Ok(
+                CTPP::new(self.control, addr.to_string(), apt_address)
+            ),
+            Err(e) => Err(e)
+        }
+    }
+
+    pub fn release_control(&mut self) -> ByteResult {
+        let total = Command::release(&self.control);
+
+        self.execute(&total)
+    }
+
+    pub fn cspb(&mut self) -> ByteResult {
+        self.tick();
+
+        let pre = Command::preflight("CSPB", &self.control);
+        self.execute(&pre)
     }
 
     // Move the control byte 1 ahead
@@ -68,7 +110,7 @@ impl ViperClient {
 
         let pre = Command::preflight(command, &self.control);
         let com = Command::make(
-            self.command_json(command),
+            self.command_json(command).as_bytes(),
             &self.control
         );
 
@@ -84,12 +126,12 @@ impl ViperClient {
         }
     }
 
-    fn execute(&mut self, b: &[u8]) -> Result<Vec<u8>, io::Error> {
+    pub fn execute(&mut self, b: &[u8]) -> ByteResult {
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
                 self.stream.read(&mut head).unwrap();
-                let buffer_size = Self::buffer_length(
+                let buffer_size = Command::buffer_length(
                     head[2],
                     head[3]
                 );
@@ -112,42 +154,6 @@ impl ViperClient {
             _ => panic!("Not available {}", command)
         }
     }
-
-    fn buffer_length(b2: u8, b3: u8) -> usize {
-        let b2 = b2 as usize;
-        let b3 = b3 as usize;
-
-        (b3 * 255) + b2 + b3
-    }
-}
-
-struct Command { }
-
-impl Command {
-    fn preflight(command: &'static str, control: &[u8]) -> Vec<u8> {
-        let b_comm = command.as_bytes();
-
-        [&COMMAND_PREFIX, &b_comm[..], &control[..]].concat()
-    }
-
-    fn make(com: String, control: &[u8]) -> Vec<u8> {
-        let b_com = com.as_bytes();
-        let second = b_com.len() / 255;
-        let length = (b_com.len() % 255) - second;
-
-        let command_prefix = [
-            0,
-            6,
-            length as u8,
-            second as u8,
-            control[0],
-            control[1],
-            control[2],
-            0
-        ];
-
-        [&command_prefix, &b_com[..]].concat()
-    }
 }
 
 #[cfg(test)]
@@ -156,35 +162,6 @@ mod tests {
     use std::str;
     use std::thread;
     use std::net::TcpListener;
-
-    #[test]
-    fn test_content_length() {
-        let control = [1, 2, 0];
-        let list = vec![
-            (94, 94, 0),
-            (117, 117, 0),
-            (367, 111, 1),
-            (752, 240, 2),
-            (951, 183, 3)
-        ];
-
-        for (byte_length, b2, b3) in list {
-            let mut s = String::from("A");
-            s = s.repeat(byte_length);
-            let b = Command::make(s, &control);
-            assert_eq!(b[2], b2);
-            assert_eq!(b[3], b3);
-        }
-    }
-
-    #[test]
-    fn test_buffer_length() {
-        assert_eq!(ViperClient::buffer_length(94, 0), 94);
-        assert_eq!(ViperClient::buffer_length(109, 0), 109);
-        assert_eq!(ViperClient::buffer_length(103, 1), 359);
-        assert_eq!(ViperClient::buffer_length(232, 2), 744);
-        assert_eq!(ViperClient::buffer_length(175, 3), 943);
-    }
 
     #[test]
     fn test_execute() {
@@ -226,7 +203,7 @@ mod tests {
             let mut head = [0; 8];
             socket.read(&mut head).unwrap();
 
-            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let bl = Command::buffer_length(head[2], head[3]);
             let mut buf = vec![0; bl];
             socket.read(&mut buf).unwrap();
             socket.write(&[&head, &buf[..]].concat()).unwrap();
@@ -234,7 +211,7 @@ mod tests {
 
         let pre = Command::preflight("UCFG", &client.control);
         let r = client.execute(&pre).unwrap();
-        assert_eq!(&r[0..8], &COMMAND_PREFIX[8..]);
+        assert_eq!(&r[0..8], &[205, 171, 1,  0, 7, 0, 0, 0]);
     }
 
     #[test]
@@ -252,17 +229,47 @@ mod tests {
             let mut head = [0; 8];
             socket.read(&mut head).unwrap();
 
-            let bl = ViperClient::buffer_length(head[2], head[3]);
+            let bl = Command::buffer_length(head[2], head[3]);
             let mut buf = vec![0; bl];
             socket.read(&mut buf).unwrap();
             socket.write(&[&head, &buf[..]].concat()).unwrap();
         });
 
         let aut = Command::make(
-            client.command_json("UAUT"),
+            client.command_json("UAUT").as_bytes(),
             &client.control
         );
         let r = client.execute(&aut).unwrap();
         assert_eq!(r.len(), 83);
+    }
+
+    #[test]
+    fn test_ctpp() {
+        let listener = TcpListener::bind("127.0.0.1:3336").unwrap();
+        let mut client = ViperClient::new(
+            &String::from("127.0.0.1"),
+            &String::from("3336"),
+            &String::from("ABCDEF")
+        );
+
+        thread::spawn(move || {
+            let (mut socket, _addr) = listener.accept().unwrap();
+            let mut head = [0; 8];
+            socket.read(&mut head).unwrap();
+
+            let bl = Command::buffer_length(head[2], head[3]);
+            let mut buf = vec![0; bl];
+            socket.read(&mut buf).unwrap();
+            socket.write(&[&head, &buf[..]].concat()).unwrap();
+        });
+
+        let data = r#"
+            {
+                "apt-address":"SB0000011",
+                "apt-subaddress": 2
+            }
+        "#;
+        let v: serde_json::Value = serde_json::from_str(data).unwrap();
+        _ = client.ctpp(&v);
     }
 }

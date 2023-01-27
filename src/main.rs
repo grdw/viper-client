@@ -36,10 +36,36 @@ fn main() {
                 &doorbell_port,
                 &token
             );
-            println!("{:?}", client.uaut());
-            println!("{:?}", client.ucfg());
-            println!("{:?}", client.info());
-            println!("{:?}", client.frcg());
+
+            // This is an example run purely for testing
+            println!("\n === Authorize:");
+            println!("{:?}", client.uaut().unwrap().to_string());
+            let cfg = client.ucfg().unwrap();
+            println!("\n === Config:");
+            println!("{:?}", cfg.to_string());
+            println!("\n === Info:");
+            println!("{:?}", client.info().unwrap().to_string());
+
+            // This is used for facial recognition
+            println!("\n === Facial rec:");
+            println!("{:?}", client.frcg().unwrap().to_string());
+
+            // This returns raw bytes or JSON:
+            println!("\n === CTPP:");
+            match client.ctpp(&cfg["vip"]) {
+                Ok(ctpp) => {
+                    println!("\n === CSPB:");
+                    println!("{:?}", client.cspb());
+                    println!("\n === CTPP conn:");
+                    println!("{:?}", client.execute(&ctpp.connect()));
+                },
+                Err(err) => {
+                    println!("Oops: {:?}", err)
+                }
+            }
+
+            println!("\n === Config:");
+            println!("{:?}", client.ucfg().unwrap().to_string());
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {
