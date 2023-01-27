@@ -77,8 +77,7 @@ impl ViperClient {
             apt_b.as_bytes()
         ].concat();
 
-        let pre = Command::cmd("CTPP", &total[..],  &self.control);
-        let tcp_bytes = [&pre[..], &total].concat();
+        let tcp_bytes = Command::cmd("CTPP", &total[..],  &self.control);
 
         match self.execute(&tcp_bytes) {
             Ok(bytes) => Ok(
@@ -127,7 +126,7 @@ impl ViperClient {
         }
     }
 
-    fn execute(&mut self, b: &[u8]) -> ByteResult {
+    pub fn execute(&mut self, b: &[u8]) -> ByteResult {
         return match self.stream.write(b) {
             Ok(_) => {
                 let mut head = [0; 8];
