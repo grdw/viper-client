@@ -1,4 +1,4 @@
-# My Doorbell
+# My Doorbell [![CircleCI](https://dl.circleci.com/status-badge/img/gh/grdw/mydoorbell/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/grdw/mydoorbell/tree/main)
 Thi is code for my doorbell; specifically for the Comelit Mini Wi-Fi MSFV. This feature a ViperClient which can talk to the Comelit Mini Wi-fi MSFV directly; so without intermediary Cloud devices.
 
 To setup:
