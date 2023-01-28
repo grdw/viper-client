@@ -89,7 +89,10 @@ fn on_connect(doorbell_ip: &String,
                       addr,
                       ucfg_json["vip"]["subaddress"]);
 
-    let mut ctpp_channel = client.ctpp_channel(addr.to_string(), sub.to_string());
+    let mut ctpp_channel = client.ctpp_channel(
+        addr.to_string(),
+        sub.to_string()
+    );
     client.execute(&ctpp_channel.open())?;
 
     println!("\n === CSPB:");
