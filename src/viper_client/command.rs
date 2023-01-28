@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-const COMMAND_HEADER: [u8; 8] = [205, 171, 1, 0, 7, 0, 0, 0];
+const OPEN_HEADER: [u8; 8] = [205, 171, 1, 0, 7, 0, 0, 0];
+const CLOSE_HEADER: [u8; 8] = [239, 1, 3, 0, 2, 0, 0, 0];
 
 pub enum CommandKind {
     UAUT(String),
@@ -113,10 +114,21 @@ impl Command {
         };
 
         let total = [
-            &COMMAND_HEADER,
+            &OPEN_HEADER,
             &com_b[..],
             &control[..],
             &tail[..]
+        ].concat();
+
+        let header = Command::header(&total);
+
+        [&header, &total[..]].concat()
+    }
+
+    pub fn close(channel: &[u8]) -> Vec<u8> {
+        let total = [
+            &CLOSE_HEADER,
+            &channel[..],
         ].concat();
 
         let header = Command::header(&total);
@@ -193,6 +205,16 @@ mod tests {
         );
         assert_eq!(b[2], 24);
         assert_eq!(b[3], 0);
+    }
+
+    #[test]
+    fn test_command_close() {
+        let control = [1, 2];
+        let b = Command::close(&control);
+
+        assert_eq!(b[2], 10);
+        assert_eq!(b[3], 0);
+        assert_eq!(&b[16..18], &control);
     }
 
     #[test]

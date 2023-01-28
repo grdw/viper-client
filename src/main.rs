@@ -77,6 +77,7 @@ fn on_connect(doorbell_ip: &String,
     client.execute(&info_channel.open())?;
     let info_bytes = client.execute(&info_channel.com(CommandKind::INFO))?;
     println!("{:?}", ViperClient::json(&info_bytes));
+    client.execute(&info_channel.close())?;
 
     println!("\n === Facial rec:");
     let frcg_channel = client.channel("FRCG");

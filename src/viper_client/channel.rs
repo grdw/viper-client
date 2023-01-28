@@ -17,6 +17,10 @@ impl Channel {
         Command::channel(&self.command, &self.control, None)
     }
 
+    pub fn close(&self) -> Vec<u8> {
+        Command::close(&self.control)
+    }
+
     pub fn com(&self, kind: CommandKind) -> Vec<u8> {
         Command::for_kind(kind, &self.control)
     }
