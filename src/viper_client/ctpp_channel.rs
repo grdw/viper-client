@@ -44,7 +44,7 @@ impl CTPPChannel {
             &C0_PREFIX[..],
             &self.bitmask,
             &[0, 17, 0, 64],
-            &Helper::gen_ran(3),
+            &Helper::gen_ran(2),
             &self.sub.as_bytes(),
             &suffix[..]
         ].concat();
@@ -145,7 +145,7 @@ mod tests {
         );
         let conn = ctpp.connect_hs();
 
-        assert_eq!(conn.len(), 60);
+        assert_eq!(&conn[2], &51);
         assert_eq!(&conn[8..10], &[192, 24])
     }
 }

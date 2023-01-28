@@ -97,6 +97,7 @@ fn on_connect(doorbell_ip: &String,
         client.execute(&frcg_channel.close())?;
     }
 
+    // Test run for CTPP:
     println!("\n === CTPP:");
     let addr = ucfg_json["vip"]["apt-address"].as_str().unwrap();
     let sub = format!("{}{}",
@@ -107,7 +108,7 @@ fn on_connect(doorbell_ip: &String,
         addr.to_string(),
         sub.to_string()
     );
-    client.execute(&ctpp_channel.open())?;
+    println!("{:?}", client.execute(&ctpp_channel.open())?);
 
     println!("\n === CSPB:");
     let cspb_channel = client.channel("CSPB");
