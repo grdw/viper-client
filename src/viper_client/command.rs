@@ -94,10 +94,6 @@ impl Command {
         }
     }
 
-    pub fn preflight(command: &String, control: &[u8]) -> Vec<u8> {
-        Command::cmd(command, &[], control)
-    }
-
     pub fn buffer_length(b2: u8, b3: u8) -> usize {
         let b2 = b2 as usize;
         let b3 = b3 as usize;
@@ -105,17 +101,26 @@ impl Command {
         (b3 * 255) + b2 + b3
     }
 
-    pub fn cmd(command: &String,
-           extra: &[u8],
-           control: &[u8]) -> Vec<u8> {
+    pub fn channel(command: &String,
+                   control: &[u8],
+                   extra: Option<&[u8]>) -> Vec<u8> {
 
         let com_b = command.as_bytes();
+
+        let tail = match extra {
+            Some(bytes) => {
+                let len = (bytes.len() + 1) as u8;
+                let start = [0, 0, len, 0, 0, 0];
+                [&start[..], &bytes[..], &[0]].concat()
+            },
+            None => vec![0]
+        };
 
         let total = [
             &COMMAND_HEADER,
             &com_b[..],
             &control[..],
-            &extra[..]
+            &tail[..]
         ].concat();
 
         let header = Command::header(&total);
@@ -127,7 +132,6 @@ impl Command {
         let mut header = Command::header(b_com);
         header[4] = control[0];
         header[5] = control[1];
-        header[6] = control[2];
 
         [&header, &b_com[..]].concat()
     }
@@ -152,15 +156,15 @@ mod tests {
 
     #[test]
     fn test_for_kind() {
-        let control = [1, 2, 0];
+        let control = [1, 2];
 
-        let cmd = Command::for_kind(CommandKind::UAUT("token".to_string()), &control);
-        assert_eq!(cmd.len(), 89);
+        let channel = Command::for_kind(CommandKind::UAUT("token".to_string()), &control);
+        assert_eq!(channel.len(), 89);
     }
 
     #[test]
     fn test_content_length() {
-        let control = [1, 2, 0];
+        let control = [1, 2];
         let list = vec![
             (94, 94, 0),
             (117, 117, 0),
@@ -179,15 +183,19 @@ mod tests {
     }
 
     #[test]
-    fn test_command_make() {
-        let control = [1, 2, 0];
+    fn test_command_channel() {
+        let control = [1, 2];
         let command = String::from("UCFG");
-        let b = Command::cmd(&command, &[], &control);
+        let b = Command::channel(&command, &control, None);
         assert_eq!(b[2], 15);
         assert_eq!(b[3], 0);
 
-        let b = Command::cmd(&command, &[10, 10, 10], &control);
-        assert_eq!(b[2], 18);
+        let b = Command::channel(
+            &command,
+            &control,
+            Some(&[10, 10, 10])
+        );
+        assert_eq!(b[2], 24);
         assert_eq!(b[3], 0);
     }
 

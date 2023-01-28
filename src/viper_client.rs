@@ -14,7 +14,7 @@ const TIMEOUT: u64 = 5000;
 
 pub struct ViperClient {
     pub stream: TcpStream,
-    control: [u8; 3]
+    control: [u8; 2]
 }
 
 type JSONResult = Result<serde_json::Value, serde_json::Error>;
@@ -36,7 +36,7 @@ impl ViperClient {
 
         ViperClient {
             stream: stream,
-            control: [117, 95, 0]
+            control: [117, 95]
         }
     }
 
@@ -134,7 +134,7 @@ mod tests {
         });
 
         let command = "UCFG".to_string();
-        let pre = Command::preflight(&command, &client.control);
+        let pre = Command::channel(&command, &client.control, None);
         let r = client.execute(&pre).unwrap();
         assert_eq!(&r[0..8], &[205, 171, 1,  0, 7, 0, 0, 0]);
     }

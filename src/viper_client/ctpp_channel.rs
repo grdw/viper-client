@@ -6,14 +6,14 @@ const R1_PREFIX: [u8; 2] = [32, 24];
 
 #[derive(Debug)]
 pub struct CTPPChannel {
-    control: [u8; 3],
+    control: [u8; 2],
     bitmask: Vec<u8>,
     apt: String,
     sub: String
 }
 
 impl CTPPChannel {
-    pub fn new(control: &[u8; 3], apt: String, sub: String) -> CTPPChannel {
+    pub fn new(control: &[u8; 2], apt: String, sub: String) -> CTPPChannel {
         CTPPChannel {
             control: *control,
             apt: apt,
@@ -32,13 +32,11 @@ impl CTPPChannel {
     }
 
     pub fn open(&self) -> Vec<u8> {
-        let apt_b = format!("\0\0\0{}\0", self.sub);
-        let total = [
-            &vec![0, 10],
-            apt_b.as_bytes()
-        ].concat();
-
-        Command::cmd(&String::from("CTPP"), &total[..], &self.control)
+        Command::channel(
+            &String::from("CTPP"),
+            &self.control,
+            Some(&self.sub.as_bytes()),
+        )
     }
 
     // This is the initial call that's made right after the CTPP and CSPB
@@ -115,7 +113,7 @@ mod tests {
     #[test]
     fn test_template() {
         let ctpp = CTPPChannel::new(
-            &[1, 2, 3],
+            &[1, 2],
             String::from("SB0000062"),
             String::from("SB000006")
         );
@@ -133,9 +131,21 @@ mod tests {
     }
 
     #[test]
+    fn test_connect_open() {
+        let ctpp = CTPPChannel::new(
+            &[1, 2],
+            String::from("SB0000062"),
+            String::from("SB000006")
+        );
+        let conn = ctpp.open();
+
+        assert_eq!(conn.len(), 37)
+    }
+
+    #[test]
     fn test_connect_hs() {
         let ctpp = CTPPChannel::new(
-            &[1, 2, 3],
+            &[1, 2],
             String::from("SB0000062"),
             String::from("SB000006")
         );

@@ -2,11 +2,11 @@ use super::{Command, CommandKind};
 
 pub struct Channel {
     command: String,
-    control: [u8; 3]
+    control: [u8; 2]
 }
 
 impl Channel {
-    pub fn new(control: &[u8; 3], command: &'static str) -> Channel {
+    pub fn new(control: &[u8; 2], command: &'static str) -> Channel {
         Channel {
             control: *control,
             command: command.to_string()
@@ -14,7 +14,7 @@ impl Channel {
     }
 
     pub fn open(&self) -> Vec<u8> {
-        Command::preflight(&self.command, &self.control)
+        Command::channel(&self.command, &self.control, None)
     }
 
     pub fn com(&self, kind: CommandKind) -> Vec<u8> {
