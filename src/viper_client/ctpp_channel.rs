@@ -4,10 +4,6 @@ use rand::distributions::{Distribution, Uniform};
 const R0_PREFIX: [u8; 2] = [0, 24];
 const R1_PREFIX: [u8; 2] = [32, 24];
 
-//const R2_PREFIX: [u8; 2] = [64, 24];
-//const R2_SUFFIX: [u8; 6] = [0, 3, 0, 14, 0, 0];
-//const R3_SUFFIX: [u8; 10] = [0, 8, 0, 3, 73, 0, 39, 0, 0, 0];
-
 #[derive(Debug)]
 pub struct CTPPChannel {
     control: [u8; 3],
@@ -91,21 +87,6 @@ impl CTPPChannel {
         self.bitmask[1] += 1;
         self.bitmask[2] += 1;
     }
-
-    //fn r3(&mut self,
-    //      actuator: &String,
-    //      other_actuator: &String) -> Vec<u8> {
-
-    //    let mask = CTPPChannel::generate_mask(4);
-
-    //    let req = [
-    //        &R2_PREFIX[..],
-    //        &mask[..],
-    //        &R3_SUFFIX[..]
-    //    ].concat();
-
-    //    return self.template(&req, actuator, other_actuator)
-    //}
 
     // All the CTPP requests follow the same template:
     fn template(&self,
