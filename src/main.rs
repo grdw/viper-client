@@ -70,6 +70,7 @@ fn on_connect(doorbell_ip: &String,
         let ucfg_bytes = client.execute(&ucfg_channel.com(ucfg))?;
         ViperClient::json(&ucfg_bytes)?
     };
+    println!("{:?}", ucfg_json);
 
     println!("\n === Info:");
     let info_channel = client.channel("INFO");
@@ -84,10 +85,10 @@ fn on_connect(doorbell_ip: &String,
     println!("{:?}", ViperClient::json(&frcg_bytes));
 
     println!("\n === CTPP:");
-    let addr = ucfg_json["vip"]["address"].as_str().unwrap();
+    let addr = ucfg_json["vip"]["apt-address"].as_str().unwrap();
     let sub = format!("{}{}",
                       addr,
-                      ucfg_json["vip"]["subaddress"]);
+                      ucfg_json["vip"]["apt-subaddress"]);
 
     let mut ctpp_channel = client.ctpp_channel(
         addr.to_string(),
@@ -102,10 +103,10 @@ fn on_connect(doorbell_ip: &String,
 
     let ctpp_hs_bytes = client.execute(&ctpp_channel.connect_hs())?;
     println!("{:?}", ctpp_hs_bytes);
-    let ctpp_re1_bytes = client.execute(&ctpp_channel.connect_reply())?;
-    println!("{:?}", ctpp_re1_bytes);
-    let ctpp_re2_bytes = client.execute(&ctpp_channel.connect_second_reply())?;
-    println!("{:?}", ctpp_re2_bytes);
+    //let ctpp_re1_bytes = client.execute(&ctpp_channel.connect_reply())?;
+    //println!("{:?}", ctpp_re1_bytes);
+    //let ctpp_re2_bytes = client.execute(&ctpp_channel.connect_second_reply())?;
+    //println!("{:?}", ctpp_re2_bytes);
 
     println!("\n === Config:");
     let ucfg_all_bytes = client.execute(&ucfg_channel.com(ucfg_all))?;
