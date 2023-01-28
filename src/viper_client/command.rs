@@ -43,11 +43,13 @@ struct Blank {
 
 impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
+        let message_type = String::from("request");
+
         match kind {
             CommandKind::UAUT(token) => {
                 let uaut = UAUT {
                     message: String::from("access"),
-                    message_type: String::from("request"),
+                    message_type: message_type,
                     message_id: 1,
                     user_token: token
                 };
@@ -59,7 +61,7 @@ impl Command {
             CommandKind::UCFG(addressbooks) => {
                 let ucfg = UCFG {
                     message: String::from("get-configuration"),
-                    message_type: String::from("request"),
+                    message_type: message_type,
                     message_id: 2,
                     addressbooks: addressbooks
                 };
@@ -71,7 +73,7 @@ impl Command {
             CommandKind::INFO => {
                 let info = Blank {
                     message: String::from("server-info"),
-                    message_type: String::from("request"),
+                    message_type: message_type,
                     message_id: 1
                 };
 
@@ -82,8 +84,8 @@ impl Command {
             CommandKind::FRCG => {
                 let frcg = Blank {
                     message: String::from("rcg-get-params"),
-                    message_type: String::from("request"),
-                    message_id: 1
+                    message_type: message_type,
+                    message_id: 121
                 };
 
                 let json = serde_json::to_string(&frcg).unwrap();

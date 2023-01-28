@@ -2,13 +2,13 @@ mod channel;
 mod ctpp_channel;
 pub mod command;
 
-use command::{Command, CommandKind};
 use channel::Channel;
+use command::{Command, CommandKind};
 use ctpp_channel::CTPPChannel;
-use std::{io, str};
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
+use std::{io, str};
 
 const TIMEOUT: u64 = 5000;
 
