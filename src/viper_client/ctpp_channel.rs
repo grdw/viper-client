@@ -31,6 +31,10 @@ impl CTPPChannel {
         )
     }
 
+    pub fn close(&self) -> Vec<u8> {
+        Command::close(&self.control)
+    }
+
     // This is the initial call that's made right after
     // the CTPP and CSPB call
     pub fn connect_hs(&self) -> Vec<u8> {
