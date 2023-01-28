@@ -1,6 +1,7 @@
 use super::{Command, Helper};
 use rand::distributions::{Distribution, Uniform};
 
+const C0_PREFIX: [u8; 2] = [192, 24];
 const R0_PREFIX: [u8; 2] = [0, 24];
 const R1_PREFIX: [u8; 2] = [32, 24];
 
@@ -33,11 +34,10 @@ impl CTPPChannel {
     // This is the initial call that's made right after
     // the CTPP and CSPB call
     pub fn connect_hs(&self) -> Vec<u8> {
-        let prefix = [192, 24];
         let suffix = [0, 16, 14, 0, 0, 0, 0];
 
         let req = [
-            &prefix[..],
+            &C0_PREFIX[..],
             &self.bitmask,
             &[0, 17, 0, 64],
             &Helper::gen_ran(3),
@@ -141,6 +141,7 @@ mod tests {
         );
         let conn = ctpp.connect_hs();
 
-        assert_eq!(conn.len(), 60)
+        assert_eq!(conn.len(), 60);
+        assert_eq!(&conn[8..10], &[192, 24])
     }
 }
