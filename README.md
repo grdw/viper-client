@@ -1,5 +1,5 @@
 # Viper Client 👷 (WIP)
-Thi is code for my doorbell; specifically for the Comelit Mini Wi-Fi MSFV. This features a ViperClient which can talk to the Comelit Mini Wi-fi MSFV directly; so without intermediary Cloud devices.
+This is code for my intercom; specifically for the Comelit Mini Wi-Fi MSFV. This features a ViperClient which can talk to the Comelit Mini Wi-fi MSFV directly; so without intermediary Cloud devices.
 
 This code is quite experimental and not ready to be used for anything real.
 
