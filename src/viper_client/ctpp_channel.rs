@@ -1,4 +1,4 @@
-use super::Command;
+use super::{Command, Helper};
 use rand::distributions::{Distribution, Uniform};
 
 const R0_PREFIX: [u8; 2] = [0, 24];
@@ -18,17 +18,8 @@ impl CTPPChannel {
             control: *control,
             apt: apt,
             sub: sub,
-            bitmask: CTPPChannel::generate_mask(4)
+            bitmask: Helper::gen_ran(4)
         }
-    }
-
-    fn generate_mask(size: usize) -> Vec<u8> {
-        let mut rng = rand::thread_rng();
-        let die = Uniform::from(1..255);
-
-        (0..size)
-            .map(|_| die.sample(&mut rng))
-            .collect::<Vec<u8>>()
     }
 
     pub fn open(&self) -> Vec<u8> {
@@ -39,9 +30,8 @@ impl CTPPChannel {
         )
     }
 
-    // This is the initial call that's made right after the CTPP and CSPB
-    // call
-    // Question: do I need CSPB?
+    // This is the initial call that's made right after
+    // the CTPP and CSPB call
     pub fn connect_hs(&self) -> Vec<u8> {
         let prefix = [192, 24];
         let suffix = [0, 16, 14, 0, 0, 0, 0];
@@ -50,7 +40,7 @@ impl CTPPChannel {
             &prefix[..],
             &self.bitmask,
             &[0, 17, 0, 64],
-            &CTPPChannel::generate_mask(3),
+            &Helper::gen_ran(3),
             &self.sub.as_bytes(),
             &suffix[..]
         ].concat();

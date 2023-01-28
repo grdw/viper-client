@@ -1,10 +1,12 @@
 mod channel;
 mod ctpp_channel;
+mod helper;
 pub mod command;
 
 use channel::Channel;
 use command::{Command, CommandKind};
 use ctpp_channel::CTPPChannel;
+use helper::Helper;
 use std::io::prelude::*;
 use std::net::TcpStream;
 use std::time::Duration;
@@ -36,7 +38,7 @@ impl ViperClient {
 
         ViperClient {
             stream: stream,
-            control: [117, 95]
+            control: Helper::control()
         }
     }
 
@@ -159,7 +161,7 @@ mod tests {
             socket.write(&[&head, &buf[..]].concat()).unwrap();
         });
 
-        let aut = Command::for_kind(CommandKind::UAUT("ABCDEFG".to_string()), &[1,2,3]);
+        let aut = Command::for_kind(CommandKind::UAUT("ABCDEFG".to_string()), &client.control);
         let r = client.execute(&aut).unwrap();
         assert_eq!(r.len(), 83);
     }

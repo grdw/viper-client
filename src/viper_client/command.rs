@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
-// This is the command prefix I see flying by
-// every time
-const COMMAND_HEADER: [u8; 8] = [205, 171, 1,  0, 7, 0, 0, 0];
-// This is another header that's pretty consistent,
-// not sure what it's for tbh:
-// const UNKNOWN_HEADER: [u8; 8] = [239, 1,   3,  0, 2, 0, 0, 0];
+
+const COMMAND_HEADER: [u8; 8] = [205, 171, 1, 0, 7, 0, 0, 0];
 
 pub enum CommandKind {
     UAUT(String),

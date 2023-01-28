@@ -90,7 +90,7 @@ fn on_connect(doorbell_ip: &String,
                       addr,
                       ucfg_json["vip"]["apt-subaddress"]);
 
-    let mut ctpp_channel = client.ctpp_channel(
+    let ctpp_channel = client.ctpp_channel(
         addr.to_string(),
         sub.to_string()
     );
