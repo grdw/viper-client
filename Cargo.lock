@@ -697,6 +697,7 @@ dependencies = [
  "actix-files",
  "actix-web",
  "ctrlc",
+ "derive_more",
  "dotenv",
  "rand",
  "serde",

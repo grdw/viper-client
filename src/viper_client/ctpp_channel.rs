@@ -1,5 +1,4 @@
 use super::{Command, Helper};
-use rand::distributions::{Distribution, Uniform};
 
 const C0_PREFIX: [u8; 2] = [0xc0, 0x18];
 const R0_PREFIX: [u8; 2] = [0x00, 0x18];

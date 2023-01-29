@@ -2,13 +2,65 @@ mod device;
 mod viper_client;
 
 use actix_files::Files;
-use actix_web::{Error, get, post, web, App, HttpRequest, HttpResponse, HttpServer, Responder};
+use actix_web::{
+    App,
+    HttpRequest,
+    HttpResponse,
+    HttpServer,
+    Responder,
+    error,
+    get,
+    http::{header::ContentType, StatusCode},
+    post,
+    web,
+};
+use derive_more::{Display, Error};
 use device::Device;
 use dotenv::dotenv;
 use serde::Serialize;
-use std::env;
+use std::{io, env};
 use viper_client::{ViperClient};
 use viper_client::command::{CommandKind};
+
+#[derive(Debug, Display, Error)]
+enum ViperError {
+    #[display(fmt = "internal error")]
+    InternalError,
+
+    #[display(fmt = "not json error")]
+    NotJSONError,
+
+    #[display(fmt = "unautorized")]
+    Unauthorized
+}
+
+impl From<io::Error> for ViperError {
+    fn from(_error: io::Error) -> Self {
+        ViperError::InternalError
+    }
+}
+
+impl From<serde_json::Error> for ViperError {
+    fn from(_error: serde_json::Error) -> Self {
+        ViperError::NotJSONError
+    }
+}
+
+impl error::ResponseError for ViperError {
+    fn error_response(&self) -> HttpResponse {
+        HttpResponse::build(self.status_code())
+            .insert_header(ContentType::html())
+            .body(self.to_string())
+    }
+
+    fn status_code(&self) -> StatusCode {
+        match *self {
+            ViperError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            ViperError::NotJSONError => StatusCode::INTERNAL_SERVER_ERROR,
+            ViperError::Unauthorized => StatusCode::UNAUTHORIZED,
+        }
+    }
+}
 
 #[derive(Clone)]
 struct Config {
@@ -51,7 +103,7 @@ async fn poll_door(_req: HttpRequest,
 async fn list_doors(
           _req: HttpRequest,
           config: web::Data<Config>
-      ) -> Result<impl Responder, Error> {
+      ) -> Result<impl Responder, ViperError> {
 
     let mut client = ViperClient::new(&config.ip, &config.port);
 
@@ -60,30 +112,32 @@ async fn list_doors(
     let uaut_channel = client.channel("UAUT");
     let ucfg_channel = client.channel("UCFG");
 
-    // TODO: Return a 403 FORBIDDEN if the auth doesn't succeed
-    {
+    let auth_json = {
         client.execute(&uaut_channel.open())?;
         let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
-        let json = ViperClient::json(&uaut_bytes).unwrap();
-        println!("{:?}", json.to_string());
+        ViperClient::json(&uaut_bytes)?
+    };
+
+    if auth_json["response-code"] == 200 {
+        client.execute(&ucfg_channel.open())?;
+        let ucfg_bytes = client.execute(&ucfg_channel.com(ucfg))?;
+        let ucfg_json = ViperClient::json(&ucfg_bytes)?;
+
+        client.execute(&uaut_channel.close())?;
+        client.execute(&ucfg_channel.close())?;
+        client.shutdown();
+        Ok(web::Json(ucfg_json["vip"].clone()))
+    } else {
+        println!("{:?}", auth_json);
+        Err(ViperError::Unauthorized)
     }
-
-    client.execute(&ucfg_channel.open())?;
-    let ucfg_bytes = client.execute(&ucfg_channel.com(ucfg))?;
-    let ucfg_json = ViperClient::json(&ucfg_bytes)?;
-
-    client.execute(&uaut_channel.close())?;
-    client.execute(&ucfg_channel.close())?;
-    client.shutdown();
-
-    Ok(web::Json(ucfg_json["vip"].clone()))
 }
 
 #[post("/api/v1/open")]
 async fn open_door(
           _req: HttpRequest,
           config: web::Data<Config>
-      ) -> Result<impl Responder, Error> {
+      ) -> Result<impl Responder, ViperError> {
 
     let mut client = ViperClient::new(&config.ip, &config.port);
     let uaut = CommandKind::UAUT(config.token.to_string());
