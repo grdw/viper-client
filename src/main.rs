@@ -11,8 +11,8 @@ use viper_client::command::{CommandKind};
 
 #[derive(Clone)]
 struct Config {
-    doorbell_ip: String,
-    doorbell_port: String,
+    ip: String,
+    port: String,
     token: String
 }
 
@@ -48,10 +48,7 @@ async fn index() -> impl Responder {
 async fn poll_door(_req: HttpRequest,
                    config: web::Data<Config>) -> impl Responder {
 
-    let available = Device::poll(
-        &config.doorbell_ip,
-        &config.doorbell_port
-    );
+    let available = Device::poll(&config.ip, &config.port);
 
     web::Json(Poll { available: available })
 }
@@ -62,16 +59,14 @@ async fn list_doors(
         config: web::Data<Config>
     ) -> Result<impl Responder, Error> {
 
-    let mut client = ViperClient::new(
-        &config.doorbell_ip,
-        &config.doorbell_port
-    );
+    let mut client = ViperClient::new(&config.ip, &config.port);
 
     let uaut = CommandKind::UAUT(config.token.to_string());
     let ucfg = CommandKind::UCFG("all".to_string());
     let uaut_channel = client.channel("UAUT");
     let ucfg_channel = client.channel("UCFG");
 
+    // TODO: Return a 403 FORBIDDEN if the auth doesn't succeed
     {
         client.execute(&uaut_channel.open())?;
         let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
@@ -94,10 +89,8 @@ async fn list_doors(
 async fn open_door(_req: HttpRequest,
                    config: web::Data<Config>) -> impl Responder {
 
-    let mut client = ViperClient::new(
-        &config.doorbell_ip,
-        &config.doorbell_port
-    );
+    let mut client = ViperClient::new(&config.ip, &config.port);
+    client.shutdown();
 
     web::Json(DoorOpenRequest { success: true, error: vec![] })
 }
@@ -111,8 +104,8 @@ async fn main() -> std::io::Result<()> {
             .app_data(
                 web::Data::new(
                     Config {
-                        doorbell_ip: env::var("DOORBELL_IP").unwrap(),
-                        doorbell_port: env::var("DOORBELL_PORT").unwrap(),
+                        ip: env::var("DOORBELL_IP").unwrap(),
+                        port: env::var("DOORBELL_PORT").unwrap(),
                         token: env::var("TOKEN").unwrap()
                     }
                 )
