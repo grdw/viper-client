@@ -8,11 +8,11 @@ use command::{Command, CommandKind};
 use ctpp_channel::CTPPChannel;
 use helper::Helper;
 use std::io::prelude::*;
-use std::net::TcpStream;
+use std::net::{TcpStream, Shutdown};
 use std::time::Duration;
 use std::{io, str};
 
-const TIMEOUT: u64 = 5000;
+const TIMEOUT: u64 = 1000;
 
 pub struct ViperClient {
     pub stream: TcpStream,
@@ -48,10 +48,10 @@ impl ViperClient {
         Channel::new(&self.control, command)
     }
 
-    pub fn ctpp_channel(&mut self, apt: String, sub: String) -> CTPPChannel {
+    pub fn ctpp_channel(&mut self) -> CTPPChannel {
         self.tick();
 
-        CTPPChannel::new(&self.control, apt, sub)
+        CTPPChannel::new(&self.control)
     }
 
     pub fn json(bytes: &[u8]) -> JSONResult {
@@ -61,21 +61,33 @@ impl ViperClient {
     }
 
     pub fn execute(&mut self, b: &[u8]) -> ByteResult {
-        return match self.stream.write(b) {
-            Ok(_) => {
-                let mut head = [0; 8];
-                self.stream.read(&mut head).unwrap();
-                let buffer_size = Command::buffer_length(
-                    head[2],
-                    head[3]
-                );
-
-                let mut buf = vec![0; buffer_size];
-                self.stream.read(&mut buf).unwrap();
-                Ok(buf)
-            },
+        match self.write(b) {
+            Ok(_) => self.read(),
             Err(e) => Err(e)
         }
+    }
+
+    pub fn write(&mut self, b: &[u8]) -> Result<usize, io::Error> {
+        self.stream.write(b)
+    }
+
+    pub fn read(&mut self) -> ByteResult {
+        let mut head = [0; 8];
+        self.stream.read(&mut head)?;
+        let buffer_size = Command::buffer_length(
+            head[2],
+            head[3]
+        );
+
+        let mut buf = vec![0; buffer_size];
+        self.stream.read(&mut buf)?;
+        Ok(buf)
+    }
+
+    pub fn shutdown(&mut self) {
+        self.stream
+            .shutdown(Shutdown::Both)
+            .expect("shutdown call failed");
     }
 
     // Move the control byte 1 ahead

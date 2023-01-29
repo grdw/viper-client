@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-const OPEN_HEADER: [u8; 8] = [205, 171, 1, 0, 7, 0, 0, 0];
-const CLOSE_HEADER: [u8; 8] = [239, 1, 3, 0, 2, 0, 0, 0];
+const OPEN:  [u8; 8] = [0xcd, 0xab, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00];
+const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
 
 pub enum CommandKind {
     UAUT(String),
@@ -114,7 +114,7 @@ impl Command {
         };
 
         let total = [
-            &OPEN_HEADER,
+            &OPEN,
             &com_b[..],
             &control[..],
             &tail[..]
@@ -127,7 +127,7 @@ impl Command {
 
     pub fn close(channel: &[u8]) -> Vec<u8> {
         let total = [
-            &CLOSE_HEADER,
+            &CLOSE,
             &channel[..],
         ].concat();
 
@@ -147,7 +147,7 @@ impl Command {
     fn header(total: &[u8]) -> [u8; 8] {
         let (length, second) = Command::byte_lengths(&total);
 
-        [0, 6, length, second, 0, 0, 0, 0]
+        [0x00, 0x06, length, second, 0x00, 0x00, 0x00, 0x00]
     }
 
     fn byte_lengths(bytes: &[u8]) -> (u8, u8) {
