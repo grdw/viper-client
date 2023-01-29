@@ -99,34 +99,53 @@ fn on_connect(doorbell_ip: &String,
 
     // Test run for CTPP:
     println!("\n === CTPP:");
-    let addr = ucfg_json["vip"]["apt-address"].as_str().unwrap();
+    let addr = ucfg_json["vip"]["apt-address"].to_string();
     let sub = format!("{}{}",
                       addr,
                       ucfg_json["vip"]["apt-subaddress"]);
 
-    let ctpp_channel = client.ctpp_channel(
-        addr.to_string(),
-        sub.to_string()
-    );
-    println!("{:?}", client.execute(&ctpp_channel.open())?);
+    let mut ctpp_channel = client.ctpp_channel();
+    client.execute(&ctpp_channel.open(&sub))?;
 
     println!("\n === CSPB:");
     let cspb_channel = client.channel("CSPB");
     let cspb_bytes = client.execute(&cspb_channel.open())?;
     println!("{:?}", cspb_bytes);
 
-    let ctpp_hs_bytes = client.execute(&ctpp_channel.connect_hs())?;
-    println!("{:?}", ctpp_hs_bytes);
+    // @madchicken is right, you need to read twice
+    client.write(&ctpp_channel.connect_hs(&sub, &addr))?;
+    println!("{:?}", client.read());
+    println!("{:?}", client.read());
 
+    client.write(&ctpp_channel.connect_actuators(0, &sub, &addr))?;
+    client.write(&ctpp_channel.connect_actuators(1, &sub, &addr))?;
+
+    // NOTE:
+    // The first run always fails. The second run right after the first
+    // one, succeeds, and I'm able to see the rest of the actuators.
+    // Why does the first run fail? It seems like I'm missing a
+    // call to CTPP
     println!("\n === Config:");
     let ucfg_all_bytes = client.execute(&ucfg_channel.com(ucfg_all))?;
     let ucfg_all_json = ViperClient::json(&ucfg_all_bytes)?;
-    println!("{:?}", ucfg_all_json);
+
+    let act = ucfg_all_json["vip"]
+                           ["user-parameters"]
+                           ["opendoor-address-book"]
+                           [0]
+                           ["apt-address"].to_string();
+
+    client.write(&ctpp_channel.link_actuators(&act, &sub))?;
+    println!("{:?}", client.read());
+    println!("{:?}", client.read());
+    client.write(&ctpp_channel.connect_actuators(0, &act, &sub))?;
+    client.write(&ctpp_channel.connect_actuators(1, &act, &sub))?;
 
     // Close the remaining channels
     client.execute(&ucfg_channel.close())?;
     client.execute(&ctpp_channel.close())?;
     client.execute(&cspb_channel.close())?;
+    client.shutdown();
 
     Ok(())
 }
