@@ -9,10 +9,12 @@ This code is quite experimental and not ready to be used for anything real.
 cp .env.example .env
 ```
 
-Fill out the details in the `.env` file, to do a demo run, simply type:
+Fill out the details in the `.env` file, and simply type:
 
 ```bash
 cargo run
 ```
+
+You can then browse: `htpp://localhost:8080` where there's a small HTML demo.
 
 Eventually I'm planning to turn this into a library of sorts, but for now considering how experimental this is, I'm leaving it as such
