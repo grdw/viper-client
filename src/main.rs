@@ -143,39 +143,42 @@ async fn open_door(
     let uaut = CommandKind::UAUT(config.token.to_string());
     let uaut_channel = client.channel("UAUT");
 
-    // TODO: Return a 403 FORBIDDEN if the auth doesn't succeed
-    {
+    let auth_json = {
         client.execute(&uaut_channel.open())?;
         let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
-        let json = ViperClient::json(&uaut_bytes).unwrap();
-        println!("{:?}", json.to_string());
+        ViperClient::json(&uaut_bytes)?
+    };
+
+    if auth_json["response-code"] == 200 {
+        let addr = "SB000006".to_string();
+        let sub  = "SB0000062".to_string();
+        let act  = "SB1000001".to_string();
+        let mut ctpp_channel = client.ctpp_channel();
+        client.execute(&ctpp_channel.open(&sub))?;
+
+        // @madchicken is right, you need to read twice
+        client.write(&ctpp_channel.connect_hs(&sub, &addr))?;
+        println!("{:?}", client.read());
+        println!("{:?}", client.read());
+
+        client.write(&ctpp_channel.connect_actuators(0, &sub, &addr))?;
+        client.write(&ctpp_channel.connect_actuators(1, &sub, &addr))?;
+
+        client.write(&ctpp_channel.link_actuators(&act, &sub))?;
+        println!("{:?}", client.read());
+        println!("{:?}", client.read());
+        client.write(&ctpp_channel.connect_actuators(0, &act, &sub))?;
+        client.write(&ctpp_channel.connect_actuators(1, &act, &sub))?;
+
+        client.execute(&uaut_channel.close())?;
+        client.execute(&ctpp_channel.close())?;
+        client.shutdown();
+
+        Ok(web::Json(DoorOpenRequest { success: true, error: vec![] }))
+    } else {
+        println!("{:?}", auth_json);
+        Err(ViperError::Unauthorized)
     }
-
-    let addr = "SB000006".to_string();
-    let sub  = "SB0000062".to_string();
-    let act  = "SB1000001".to_string();
-    let mut ctpp_channel = client.ctpp_channel();
-    client.execute(&ctpp_channel.open(&sub))?;
-
-    // @madchicken is right, you need to read twice
-    client.write(&ctpp_channel.connect_hs(&sub, &addr))?;
-    println!("{:?}", client.read());
-    println!("{:?}", client.read());
-
-    client.write(&ctpp_channel.connect_actuators(0, &sub, &addr))?;
-    client.write(&ctpp_channel.connect_actuators(1, &sub, &addr))?;
-
-    client.write(&ctpp_channel.link_actuators(&act, &sub))?;
-    println!("{:?}", client.read());
-    println!("{:?}", client.read());
-    client.write(&ctpp_channel.connect_actuators(0, &act, &sub))?;
-    client.write(&ctpp_channel.connect_actuators(1, &act, &sub))?;
-
-    client.execute(&uaut_channel.close())?;
-    client.execute(&ctpp_channel.close())?;
-    client.shutdown();
-
-    Ok(web::Json(DoorOpenRequest { success: true, error: vec![] }))
 }
 
 #[actix_web::main]
