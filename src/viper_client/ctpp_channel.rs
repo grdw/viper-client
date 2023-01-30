@@ -4,8 +4,19 @@ const C0_PREFIX: [u8; 2] = [0xc0, 0x18];
 const R0_PREFIX: [u8; 2] = [0x00, 0x18];
 const R1_PREFIX: [u8; 2] = [0x20, 0x18];
 
-// TODO: What is this for?
 const PADDING: [u8; 4] = [0xff, 0xff, 0xff, 0xff];
+
+// Every replaceable character in this template
+// is marked as 0xFF not 0xff.
+const HS_TEMPLATE: [u8; 52] = [
+    0xc0, 0x18, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x11,
+    0x00, 0x40, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x10, 0x0e,
+    0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+    0xFF, 0xFF, 0x00, 0x00
+];
 
 #[derive(Debug)]
 pub struct CTPPChannel {
@@ -36,20 +47,15 @@ impl CTPPChannel {
     // This is the initial call that's made right after
     // the CTPP and CSPB call
     pub fn connect_hs(&self, a1: &String, a2: &String) -> Vec<u8> {
-        let q1 = [0x00, 0x11, 0x00, 0x70];
-        let q2 = [0x00, 0x10, 0x0e, 0x00, 0x00, 0x00, 0x00];
-        let q3 = Helper::gen_ran(2);
+        let mut req = HS_TEMPLATE;
 
-        let req = [
-            &C0_PREFIX[..],
-            &self.bitmask,
-            &q1[..],
-            &q3[..],
-            &a2.as_bytes(),
-            &q2[..]
-        ].concat();
+        CTPPChannel::set_bytes(&mut req, &self.bitmask, 2);
+        CTPPChannel::set_bytes(&mut req, &Helper::gen_ran(2), 10);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 12);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 32);
+        CTPPChannel::set_bytes(&mut req, &a2.as_bytes(), 42);
 
-        return self.template(&req, &a2, &a1)
+        Command::make(&req, &self.control)
     }
 
     pub fn connect_actuators(&mut self,
@@ -124,6 +130,12 @@ impl CTPPChannel {
 
         Command::make(&req, &self.control)
     }
+
+    fn set_bytes(template: &mut [u8], bytes: &[u8], offset: usize) {
+        for (i, b) in bytes.iter().enumerate() {
+            template[i + offset] = *b;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -168,8 +180,13 @@ mod tests {
             &String::from("SB000006")
         );
 
-        assert_eq!(&conn[2], &51);
-        assert_eq!(&conn[8..10], &[192, 24])
+        assert_eq!(&conn[2], &52);
+        assert_eq!(&conn[8..10], &[192, 24]);
+        assert_eq!(str::from_utf8(&conn[20..29]).unwrap(), "SB0000062");
+        assert_eq!(str::from_utf8(&conn[40..49]).unwrap(), "SB0000062");
+        assert_eq!(&conn[49], &0x00);
+        assert_eq!(str::from_utf8(&conn[50..58]).unwrap(), "SB000006");
+        assert_eq!(&conn[58..], &[0x00, 0x00]);
     }
 
     #[test]
