@@ -64,10 +64,17 @@ The first 8 bytes of a viper response and request have the following format:
 
 ## Determining the length of the buffer
 
-The length is determined by doing the following:
+To accurately read the length of a response, this is determined by doing the following:
 
 ```
 (L1 to decimal) + ((L2 to decimal) * 255) + L2 to decimal
+```
+
+To set the length of a request do:
+
+```
+length of request / 255 = L2
+(length of request % 255) - L2 = L1
 ```
 
 ## Opening a channel
