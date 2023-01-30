@@ -111,7 +111,53 @@ An example:
 22 3a 31 32 31 7d       <-- End of the JSON blob
 ```
 
-The requests can be either JSON or some other syntax of bytes which I've yet to decipher.
+The requests can be either JSON or another syntax.
+
+## CTPP requests (WIP)
+This is the only non-JSON channel; however it will return JSON formatted responses in some occassions. There are various type of these requests, of which some are listed in the [icona-bridge-client](https://github.com/madchicken/comelit-client/blob/3e4b05ce7fa7b5d744b39a5f62c6a1d22774c8c0/src/icona-bridge-client.ts#L81-L127).
+
+The requests are all formatted somewhat similarly:
+
+- They all take one actuator and another, and link them together.
+- The requests always end on `[0x00, 0x00]`
+- The link actuator format is: `<actuator as bytes> 00 <other actuator as bytes>`
+- For some reason a subnet mask is always in there `ff ff ff ff`. God knows why?
+  - Initially I thought it had something to do with the server logging which IP makes the request perhaps
+- 
+
+**Format:**
+
+```
+00 06 L1 L2 C1 C2 00 00 <-- Header
+A1 A2 B1 B2 B3 B4 00 28  
+00 01 53 42 30 30 30 30
+30 36 32 00 53 42 31 30 
+30 30 30 31 00 00 01 20
+6c 7b 4d 6d 53 42 30 30 
+30 30 30 36 32 00 49 49
+ff ff ff ff R1 R2 R3 R4 
+R5 R6 R7 R8 R9 00 S1 S2
+S3 S4 S5 S6 S7 S8 00 00
+```
+
+**Explanation to the letters:**
+
+- L1, L2 = See "Header" section
+- C1, C2 = See "Header" section
+- A1, A2 = This is probably some request type, but I can't exactly decipher what or why.
+- B1, B2, B3, B4 = These are random bytes; it just feels like fudging. They do sometimes bump up or down, or change all 4 completely.
+- R1 till R9 = An actuator ID
+- S1 till S8 = Another actuator ID
+
+A1 A2 | Interpretation:
+------|---------------------------------
+40 18 | ?
+00 18 | ?
+60 18 | ?
+20 18 | ?
+c0 18 | ?
+
+The traces I have captured all start with `c0 18`, `00 18`, `20 18` and `c0 18`. After which it proceeds to do other calls. Sometimes another `c0 18` call follows whith different bytes.
 
 ## Parsing responses
 ILB
