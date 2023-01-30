@@ -117,6 +117,18 @@ cd ab 01 00 07 00 00 00 <--- Magic constant
 
 I believe the only example is CTPP where this actually happens.
 
+Multiple channels can be opened, but be sure to increase the first channel byte by 1, to ensure that they don't collide. Also, you need to keep state of which channels you have opened, because eventually you'll have to close them.
+
+## Closing a channel
+
+To close an opened channel another request needs to be made which always looks like:
+
+```
+00 06 0a 00 00 00 00 00 <-- The header
+ef 01 03 00 02 00 00 00 <-- Magic constant of 8 bytes
+76 5f                   <-- Channel to close
+```
+
 ## Executing a request on a channel
 To execute a request on a channel, you have to make sure that the control bytes match. If they do not, viper-server will fail. Also, if the length doesn't match in the request, viper-server will return a bad request. 
 
