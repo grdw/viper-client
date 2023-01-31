@@ -215,6 +215,8 @@ mod tests {
         assert_eq!(&conn_2[8..10], &[32, 24]);
         assert_eq!(str::from_utf8(&conn_2[20..29]).unwrap(), "SB0000062");
         assert_eq!(str::from_utf8(&conn_2[30..38]).unwrap(), "SB000006");
+        // This is to test that the bitmask doesn't swap between
+        // 0x00 and 0x20 calls
         assert_eq!(&conn_2[10..14], &conn[10..14]);
     }
 
