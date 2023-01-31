@@ -1,8 +1,5 @@
 use super::{Command, Helper};
 
-const C0_PREFIX: [u8; 2] = [0xc0, 0x18];
-const PADDING: [u8; 4] = [0xff, 0xff, 0xff, 0xff];
-
 // Every replaceable character in this template
 // is marked as 0xFF not 0xff.
 const HS_TEMPLATE: [u8; 52] = [
@@ -13,6 +10,24 @@ const HS_TEMPLATE: [u8; 52] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0x00, 0x00
+];
+
+const OPEN_DOOR_TEMPLATE: [u8; 72] = [
+    0xc0, 0x18,
+    0xFF, 0xFF, 0xFF, 0xFF,  // 4 random bytes
+    0x00, 0x28, 0x00, 0x01,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Actuator 1
+    0x00,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Actuator 2
+    0x00, 0x00, 0x01, 0x20,
+    0xFF, 0xFF, 0xFF, 0xFF,  // 4 other random bytes
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Actuator 1
+    0x00, 0x49, 0x49,
+    0xff, 0xff, 0xff, 0xff,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Actuator 1
+    0x00,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, // Actuator 2
+    0x00, 0x00
 ];
 
 const ACK_TEMPLATE: [u8; 32] = [
@@ -87,50 +102,22 @@ impl CTPPChannel {
                           a1: &String,
                           a2: &String) -> Vec<u8> {
 
-        self.tick_mask();
+        let mut req = OPEN_DOOR_TEMPLATE;
 
-        let q1 = [0x00, 0x28, 0x00, 0x01];
-        let q2 = [0x00, 0x00, 0x01, 0x20];
-        let q3 = Helper::gen_ran(4);
-        let q4 = [0x00, 0x49, 0x49];
+        CTPPChannel::set_bytes(&mut req, &Helper::gen_ran(4), 2);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 10);
+        CTPPChannel::set_bytes(&mut req, &a2.as_bytes(), 20);
+        CTPPChannel::set_bytes(&mut req, &Helper::gen_ran(4), 32);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 36);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 52);
+        CTPPChannel::set_bytes(&mut req, &a2.as_bytes(), 62);
 
-        let req = [
-            &C0_PREFIX,
-            &self.bitmask[..],
-            &q1[..],
-            &a1.as_bytes(),
-            &[0x00],
-            &a2.as_bytes(),
-            &q2[..],
-            &q3[..],
-            &a1.as_bytes(),
-            &q4[..]
-        ].concat();
-
-        return self.template(&req, a1, a2)
+        return Command::make(&req, &self.control)
     }
 
     fn tick_mask(&mut self) {
         self.bitmask[1] += 1;
         self.bitmask[2] += 1;
-    }
-
-    // All the CTPP requests follow the same template:
-    fn template(&self,
-                prefix: &[u8],
-                actuator: &String,
-                other_actuator: &String) -> Vec<u8> {
-
-        let link = format!("{}\0{}", actuator, other_actuator);
-
-        let req = [
-            &prefix[..],
-            &PADDING[..],
-            &link.as_bytes(),
-            &[0x00, 0x00]
-        ].concat();
-
-        Command::make(&req, &self.control)
     }
 
     fn set_bytes(template: &mut [u8], bytes: &[u8], offset: usize) {
@@ -144,22 +131,6 @@ impl CTPPChannel {
 mod tests {
     use super::*;
     use std::str;
-
-    #[test]
-    fn test_template() {
-        let ctpp = CTPPChannel::new(&[1, 2]);
-        let t = ctpp.template(
-            &[0, 0, 0, 0, 0, 0, 0, 0],
-            &String::from("SB0000062"),
-            &String::from("SB000006")
-        );
-
-        assert_eq!(&t[16..20], &[255, 255, 255, 255]);
-        assert_eq!(str::from_utf8(&t[20..29]).unwrap(), "SB0000062");
-        assert_eq!(str::from_utf8(&t[30..38]).unwrap(), "SB000006");
-        assert_eq!(&t[29], &0);
-        assert_eq!(&t[38..40], &[0, 0]);
-    }
 
     #[test]
     fn test_connect_open() {
@@ -229,6 +200,13 @@ mod tests {
         );
 
         assert_eq!(&conn[2], &72);
-        assert_eq!(&conn[8..10], &[192, 24])
+        assert_eq!(&conn[8..10], &[192, 24]);
+        assert_eq!(str::from_utf8(&conn[18..27]).unwrap(), "SB0000062");
+        assert_eq!(&conn[27], &0);
+        assert_eq!(str::from_utf8(&conn[28..36]).unwrap(), "SB000006");
+        assert_eq!(str::from_utf8(&conn[44..53]).unwrap(), "SB0000062");
+        assert_eq!(str::from_utf8(&conn[60..69]).unwrap(), "SB0000062");
+        assert_eq!(&conn[69], &0);
+        assert_eq!(str::from_utf8(&conn[70..78]).unwrap(), "SB000006");
     }
 }
