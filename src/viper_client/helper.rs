@@ -5,7 +5,7 @@ pub struct Helper {}
 impl Helper {
     pub fn gen_ran(size: usize) -> Vec<u8> {
         let mut rng = rand::thread_rng();
-        let die = Uniform::from(1..255);
+        let die = Uniform::from(1..253);
 
         (0..size)
             .map(|_| die.sample(&mut rng))
@@ -14,7 +14,7 @@ impl Helper {
 
     pub fn control() -> [u8; 2] {
         let mut rng = rand::thread_rng();
-        let die = Uniform::from(1..255);
+        let die = Uniform::from(1..253);
 
         [
             die.sample(&mut rng),
