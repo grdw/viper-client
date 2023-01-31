@@ -1,9 +1,6 @@
 use super::{Command, Helper};
 
 const C0_PREFIX: [u8; 2] = [0xc0, 0x18];
-const R0_PREFIX: [u8; 2] = [0x00, 0x18];
-const R1_PREFIX: [u8; 2] = [0x20, 0x18];
-
 const PADDING: [u8; 4] = [0xff, 0xff, 0xff, 0xff];
 
 // Every replaceable character in this template
@@ -16,6 +13,13 @@ const HS_TEMPLATE: [u8; 52] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
     0xFF, 0xFF, 0x00, 0x00
+];
+
+const ACK_TEMPLATE: [u8; 32] = [
+    0xFF, 0x18, 0xFF, 0xFF, 0xFF, 0xFF,
+    0x00, 0x00, 0xff, 0xff, 0xff, 0xff,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00,
+    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00
 ];
 
 #[derive(Debug)]
@@ -45,7 +49,9 @@ impl CTPPChannel {
     }
 
     // This is the initial call that's made right after
-    // the CTPP and CSPB call
+    // the CTPP channel is opened
+    // You have to read replies (max times is 2) until a response
+    // is returned that starts with [0x60, 0x18]
     pub fn connect_hs(&self, a1: &String, a2: &String) -> Vec<u8> {
         let mut req = HS_TEMPLATE;
 
@@ -58,27 +64,23 @@ impl CTPPChannel {
         Command::make(&req, &self.control)
     }
 
-    pub fn connect_actuators(&mut self,
-                             prefix: u8,
-                             a1: &String,
-                             a2: &String) -> Vec<u8> {
+    pub fn ack(&mut self,
+               prefix: u8,
+               a1: &String,
+               a2: &String) -> Vec<u8> {
 
-        let pre = match prefix {
-            0 => {
-                self.tick_mask();
-                &R0_PREFIX
-            },
-            1 => &R1_PREFIX,
-            _ => panic!("Invalid prefix")
-        };
+        let mut req = ACK_TEMPLATE;
 
-        let req = [
-            &pre[..],
-            &self.bitmask[..],
-            &[0x00, 0x00]
-        ].concat();
+        if prefix == 0x00 {
+            self.bitmask = Helper::gen_ran(4);
+        }
 
-        return self.template(&req, a1, a2)
+        CTPPChannel::set_bytes(&mut req, &[prefix], 0);
+        CTPPChannel::set_bytes(&mut req, &self.bitmask, 2);
+        CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 12);
+        CTPPChannel::set_bytes(&mut req, &a2.as_bytes(), 22);
+
+        return Command::make(&req, &self.control)
     }
 
     pub fn link_actuators(&mut self,
@@ -190,25 +192,30 @@ mod tests {
     }
 
     #[test]
-    fn test_connect_actuators() {
+    fn test_ack() {
         let mut ctpp = CTPPChannel::new(&[1, 2]);
-        let conn = ctpp.connect_actuators(
-            0,
+        let conn = ctpp.ack(
+            0x00,
             &String::from("SB0000062"),
             &String::from("SB000006")
         );
 
         assert_eq!(&conn[2], &32);
         assert_eq!(&conn[8..10], &[0, 24]);
+        assert_eq!(str::from_utf8(&conn[20..29]).unwrap(), "SB0000062");
+        assert_eq!(str::from_utf8(&conn[30..38]).unwrap(), "SB000006");
 
-        let conn = ctpp.connect_actuators(
-            1,
+        let conn_2 = ctpp.ack(
+            0x20,
             &String::from("SB0000062"),
             &String::from("SB000006")
         );
 
-        assert_eq!(&conn[2], &32);
-        assert_eq!(&conn[8..10], &[32, 24])
+        assert_eq!(&conn_2[2], &32);
+        assert_eq!(&conn_2[8..10], &[32, 24]);
+        assert_eq!(str::from_utf8(&conn_2[20..29]).unwrap(), "SB0000062");
+        assert_eq!(str::from_utf8(&conn_2[30..38]).unwrap(), "SB000006");
+        assert_eq!(&conn_2[10..14], &conn[10..14]);
     }
 
     #[test]
