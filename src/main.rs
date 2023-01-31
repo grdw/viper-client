@@ -155,20 +155,25 @@ async fn open_door(
         let act  = "SB1000001".to_string();
         let mut ctpp_channel = client.ctpp_channel();
         client.execute(&ctpp_channel.open(&sub))?;
-
-        // @madchicken is right, you need to read twice
         client.write(&ctpp_channel.connect_hs(&sub, &addr))?;
-        println!("{:?}", client.read());
-        println!("{:?}", client.read());
 
-        client.write(&ctpp_channel.connect_actuators(0, &sub, &addr))?;
-        client.write(&ctpp_channel.connect_actuators(1, &sub, &addr))?;
+        loop {
+            // You need to read until you get a [0x60, 0x18]
+            // as a response; which means success :^)
+            let bytes = client.read()?;
+            if &bytes[0..2] == &[0x60, 0x18] {
+                break;
+            }
+        }
+
+        client.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
+        client.write(&ctpp_channel.ack(0x20, &sub, &addr))?;
 
         client.write(&ctpp_channel.link_actuators(&act, &sub))?;
         println!("{:?}", client.read());
         println!("{:?}", client.read());
-        client.write(&ctpp_channel.connect_actuators(0, &act, &sub))?;
-        client.write(&ctpp_channel.connect_actuators(1, &act, &sub))?;
+        client.write(&ctpp_channel.ack(0x00, &act, &sub))?;
+        client.write(&ctpp_channel.ack(0x20, &act, &sub))?;
 
         client.execute(&uaut_channel.close())?;
         client.execute(&ctpp_channel.close())?;
