@@ -171,9 +171,6 @@ async fn open_door(
 
         client.write(&ctpp_channel.link_actuators(&act, &sub))?;
         println!("{:?}", client.read());
-        println!("{:?}", client.read());
-        client.write(&ctpp_channel.ack(0x00, &act, &sub))?;
-        client.write(&ctpp_channel.ack(0x20, &act, &sub))?;
 
         client.execute(&uaut_channel.close())?;
         client.execute(&ctpp_channel.close())?;
