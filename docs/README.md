@@ -188,6 +188,8 @@ A1 A2 | Interpretation: | Response | Request
 60 18 | ?               | ✅       | ✅
 c0 18 | ?               |          | ✅
 
+---
+
 **`c0 18` body types:**
 
 The first request body that is seen submitted to the CTPP channel looks like such:
@@ -216,6 +218,8 @@ R1 R2 R3 R4 R5 R6 R7 R8 R9 00
 - R1 till R9 = An actuator ID
 - S1 till S8 = Another actuator ID
 
+---
+
 **`00 18` and `20 18` body types:**
 
 These feel like acknowledgements more than anything else. They look like:
@@ -228,7 +232,11 @@ There are some requests that feature another command, I'm assuming because the v
 
 - Q1 till Q4 = Random bytes
 
+---
+
 **`60 18` body types:**
+
+---
 
 **`40 18` body types:**
 
