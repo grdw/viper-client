@@ -150,7 +150,7 @@ An example:
 The requests can be either JSON or another syntax.
 
 ## CTPP requests (WIP)
-This is the only non-JSON channel; however it will return JSON formatted responses in some occassions. There are various type of these requests, of which some are listed in the [icona-bridge-client](https://github.com/madchicken/comelit-client/blob/3e4b05ce7fa7b5d744b39a5f62c6a1d22774c8c0/src/icona-bridge-client.ts#L81-L127).
+This is the only non-JSON channel. There are various type of these requests, of which some are listed in the [icona-bridge-client](https://github.com/madchicken/comelit-client/blob/3e4b05ce7fa7b5d744b39a5f62c6a1d22774c8c0/src/icona-bridge-client.ts#L81-L127).
 
 The requests are all formatted somewhat similarly:
 
@@ -161,19 +161,15 @@ The requests are all formatted somewhat similarly:
   - Initially I thought it had something to do with the server logging which IP makes the request perhaps
 - 
 
-**Format:**
+**Generic format:**
 
 ```
 00 06 L1 L2 C1 C2 00 00 <-- Header
-A1 A2 B1 B2 B3 B4 00 28  
-00 01 53 42 30 30 30 30
-30 36 32 00 53 42 31 30 
-30 30 30 31 00 00 01 20
-6c 7b 4d 6d 53 42 30 30 
-30 30 30 36 32 00 49 49
-ff ff ff ff R1 R2 R3 R4 
-R5 R6 R7 R8 R9 00 S1 S2
-S3 S4 S5 S6 S7 S8 00 00
+A1 A2 B1 B2 B3 B4 
+[[ BODY ]]
+ff ff ff ff R1 R2 R3 R4 <-- Footer 
+R5 R6 R7 R8 R9 00 S1 S2 <-- ..
+S3 S4 S5 S6 S7 S8 00 00 <-- ..
 ```
 
 **Explanation to the letters:**
@@ -184,16 +180,31 @@ S3 S4 S5 S6 S7 S8 00 00
 - B1, B2, B3, B4 = These are random bytes; it just feels like fudging. They do sometimes bump up or down, or change all 4 completely.
 - R1 till R9 = An actuator ID
 - S1 till S8 = Another actuator ID
+- [[ BODY ]] = A dynamic set of bytes
 
-A1 A2 | Interpretation:
-------|---------------------------------
-40 18 | ?
-00 18 | ?
-60 18 | ?
-20 18 | ?
-c0 18 | ?
+A1 A2 | Interpretation: | Body        | Response | Request
+------|-----------------|-------------|----------|--------
+40 18 | ?               |             | ✅       | ✅
+00 18 | ?               |             | ✅       | ✅
+60 18 | ?               |             | ✅       | ✅
+20 18 | ?               |             |          | ✅
+c0 18 | ?               | See section |          | ✅
 
-The traces I have captured all start with `c0 18`, `00 18`, `20 18` and `c0 18`. After which it proceeds to do other calls. Sometimes another `c0 18` call follows whith different bytes.
+**`c0 18` body types:**
+
+```
+00 28 00 01 
+R1 R2 R3 R4 R5 R6 R7 R8 R9 00 
+S1 S2 S3 S4 S5 S6 S7 S8 
+00 00 01 20 
+Q1 Q2 Q3 Q4 
+R1 R2 R3 R4 R5 R6 R7 R8 R9 00 
+49 49
+```
+
+- Q1 till Q4 = Random bytes
+- R1 till R9 = An actuator ID
+- S1 till S8 = Another actuator ID
 
 ## Parsing responses
 ILB
