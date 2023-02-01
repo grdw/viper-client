@@ -84,7 +84,7 @@ A channel is opened by executing the following bytes:
 00 06 0f 00 00 00 00 00  <--- The header
 cd ab 01 00 07 00 00 00  <--- A magical constant 8 bytes (this is the same for opening any channel)
 55 41 55 54 76 5f 00     <--- The channel to open + 2 control bytes, ending on a zero
-``` 
+```
 
 In this particular example I'm opening a `UAUT` (55 41 55 54) channel with the control bytes 76 5F.
 
@@ -130,7 +130,7 @@ ef 01 03 00 02 00 00 00 <-- Magic constant of 8 bytes
 ```
 
 ## Executing a request on a channel
-To execute a request on a channel, you have to make sure that the control bytes match. If they do not, viper-server will fail. Also, if the length doesn't match in the request, viper-server will return a bad request. 
+To execute a request on a channel, you have to make sure that the control bytes match. If they do not, viper-server will fail. Also, if the length doesn't match in the request, viper-server will return a bad request.
 
 An example:
 
@@ -138,11 +138,11 @@ An example:
 00 06 46 00 79 5f 00 00 <-- Header (46 indicates that there are 46 characters submitted after the header), 79 5F are the control bytes
 7b 22 6d 65 73 73 61 67 <-- Start of the JSON blob in this case
 65 22 3a 22 72 63 67 2d
-67 65 74 2d 70 61 72 61 
+67 65 74 2d 70 61 72 61
 6d 73 22 2c 22 6d 65 73
-73 61 67 65 2d 74 79 70 
+73 61 67 65 2d 74 79 70
 65 22 3a 22 72 65 71 75
-65 73 74 22 2c 22 6d 65 
+65 73 74 22 2c 22 6d 65
 73 73 61 67 65 2d 69 64
 22 3a 31 32 31 7d       <-- End of the JSON blob
 ```
@@ -159,20 +159,18 @@ The requests are all formatted somewhat similarly:
 - The link actuator format is: `<actuator as bytes> 00 <other actuator as bytes>`
 - For some reason a subnet mask is always in there `ff ff ff ff`. God knows why?
   - Initially I thought it had something to do with the server logging which IP makes the request perhaps
-- 
+-
 
 **Generic format:**
 
 ```
 00 06 L1 L2 C1 C2 00 00 <-- Header
-A1 A2 B1 B2 B3 B4 
+A1 A2 B1 B2 B3 B4
 [[ BODY ]]
-ff ff ff ff R1 R2 R3 R4 <-- Footer 
+ff ff ff ff R1 R2 R3 R4 <-- Footer
 R5 R6 R7 R8 R9 00 S1 S2 <-- ..
 S3 S4 S5 S6 S7 S8 00 00 <-- ..
 ```
-
-**Explanation to the letters:**
 
 - L1, L2 = See "Header" section
 - C1, C2 = See "Header" section
@@ -182,29 +180,42 @@ S3 S4 S5 S6 S7 S8 00 00 <-- ..
 - S1 till S8 = Another actuator ID
 - [[ BODY ]] = A dynamic set of bytes
 
-A1 A2 | Interpretation: | Body        | Response | Request
-------|-----------------|-------------|----------|--------
-40 18 | ?               |             | ✅       | ✅
-00 18 | ?               |             | ✅       | ✅
-60 18 | ?               |             | ✅       | ✅
-20 18 | ?               |             |          | ✅
-c0 18 | ?               | See section |          | ✅
+A1 A2 | Interpretation: | Response | Request
+------|-----------------|----------|--------
+40 18 | ?               | ✅       | ✅
+00 18 | ?               | ✅       | ✅
+60 18 | ?               | ✅       | ✅
+20 18 | ?               |          | ✅
+c0 18 | ?               |          | ✅
 
 **`c0 18` body types:**
 
 ```
-00 28 00 01 
-R1 R2 R3 R4 R5 R6 R7 R8 R9 00 
-S1 S2 S3 S4 S5 S6 S7 S8 
-00 00 01 20 
-Q1 Q2 Q3 Q4 
-R1 R2 R3 R4 R5 R6 R7 R8 R9 00 
+00 28 00 01
+R1 R2 R3 R4 R5 R6 R7 R8 R9 00
+S1 S2 S3 S4 S5 S6 S7 S8
+00 00 01 20
+Q1 Q2 Q3 Q4
+R1 R2 R3 R4 R5 R6 R7 R8 R9 00
 49 49
 ```
 
 - Q1 till Q4 = Random bytes
 - R1 till R9 = An actuator ID
 - S1 till S8 = Another actuator ID
+
+**`00 18` and `20 18` body types:**
+These feel like acknowledgements more than anything else. They look like:
+
+```
+Q1 Q2 Q3 Q4 00 00
+```
+
+- Q1 till Q4 = Random bytes
+
+**`60 18` body types:**
+
+**`40 18` body types:**
 
 ## Parsing responses
 ILB
