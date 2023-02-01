@@ -191,6 +191,15 @@ c0 18 | ?               |          | ✅
 **`c0 18` body types:**
 
 ```
+00 11 00 40 Q1 Q2
+R1 R2 R3 R4 R5 R6 R7 R8 R9
+00 10 0e
+00, 00, 00, 00
+```
+
+- Q1 till Q2 = Random bytes
+
+```
 00 28 00 01
 R1 R2 R3 R4 R5 R6 R7 R8 R9 00
 S1 S2 S3 S4 S5 S6 S7 S8
