@@ -1,3 +1,4 @@
+use actix_web::web::to;
 use serde::{Deserialize, Serialize};
 
 const OPEN:  [u8; 8] = [0xcd, 0xab, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00];
@@ -92,10 +93,7 @@ impl Command {
     }
 
     pub fn buffer_length(b2: u8, b3: u8) -> usize {
-        let b2 = b2 as usize;
-        let b3 = b3 as usize;
-
-        (b3 * 255) + b2 + b3
+        u16::from_le_bytes([b2, b3]) as usize
     }
 
     pub fn channel(command: &String,
@@ -145,16 +143,9 @@ impl Command {
     }
 
     fn header(total: &[u8]) -> [u8; 8] {
-        let (length, second) = Command::byte_lengths(&total);
+        let len = total.len().to_le_bytes();
 
-        [0x00, 0x06, length, second, 0x00, 0x00, 0x00, 0x00]
-    }
-
-    fn byte_lengths(bytes: &[u8]) -> (u8, u8) {
-        let second = bytes.len() / 255;
-        let length = (bytes.len() % 255) - second;
-
-        (length as u8, second as u8)
+        [0x00, 0x06, len[0], len[1], 0x00, 0x00, 0x00, 0x00]
     }
 }
 

@@ -59,23 +59,8 @@ The first 8 bytes of a viper response and request have the following format:
 00 06 L1 L2 C1 C2 00 00
 ```
 
-- The L1 and L2 bytes indicate the length of the bytes to read.
+- The L1 and L2 bytes indicate the length of the bytes to read in LITTLE ENDIAN encoding.
 - The C1 and C2 bytes are channel (or control bytes). These are `00 00` in case of some requests.
-
-## Determining the length of the buffer
-
-To accurately read the length of a response, this is determined by doing the following:
-
-```
-(L1 to decimal) + ((L2 to decimal) * 255) + L2 to decimal
-```
-
-To set the length of a request do:
-
-```
-length of request / 255 = L2
-(length of request % 255) - L2 = L1
-```
 
 ## Opening a channel
 A channel is opened by executing the following bytes:
@@ -90,20 +75,20 @@ In this particular example I'm opening a `UAUT` (55 41 55 54) channel with the c
 
 Other channels that can be opened:
 
-Channel | Interpretation
----------|-------------------------------------------
-CSPB     | ?
-CTPP     | Used to link actuators / open doors / ???
-ECHO     | ?
-ECHO_SRV | ?
-FRCG     | Grabs face recognition details
-INFO     | Fetches information from the device
-PUSH     | To set a push token
-RTPC     | ? Something related to camera ?
-UAUT     | Used for authorizing with the device
-UADM     | Administrator channel
-UCFG     | Used to extract configuration details
-UDPM     | ? Precursor for UDP calls ?
+| Channel  | Interpretation                            |
+|----------|-------------------------------------------|
+ | CSPB     | ?                                         |
+ | CTPP     | Used to link actuators / open doors / ??? |
+ | ECHO     | ?                                         |
+ | ECHO_SRV | ?                                         |
+ | FRCG     | Grabs face recognition details            |
+ | INFO     | Fetches information from the device       |
+ | PUSH     | To set a push token                       |
+ | RTPC     | ? Something related to camera ?           |
+ | UAUT     | Used for authorizing with the device      |
+ | UADM     | Administrator channel                     |
+ | UCFG     | Used to extract configuration details     |
+ | UDPM     | ? Precursor for UDP calls ?               |
 
 In some cases extra data can be passed to opening a channel, which is done like such:
 
@@ -180,13 +165,13 @@ S3 S4 S5 S6 S7 S8 00 00 <-- ..
 - S1 till S8 = Another actuator ID
 - [[ BODY ]] = A dynamic set of bytes
 
-A1 A2 | Interpretation: | Response | Request
-------|-----------------|----------|--------
-00 18 | ?               | ✅       | ✅
-20 18 | ?               |          | ✅
-40 18 | ?               | ✅       | ✅
-60 18 | ?               | ✅       | ✅
-c0 18 | ?               |          | ✅
+| A1 A2 | Interpretation: | Response | Request |
+|-------|-----------------|----------|---------|
+ | 00 18 | ?               | ✅        | ✅       |
+ | 20 18 | ?               |          | ✅       |
+ | 40 18 | ?               | ✅        | ✅       |
+ | 60 18 | ?               | ✅        | ✅       |
+ | c0 18 | ?               |          | ✅       |
 
 ---
 
