@@ -59,7 +59,7 @@ The first 8 bytes of a viper response and request have the following format:
 00 06 L1 L2 C1 C2 00 00
 ```
 
-- The L1 and L2 bytes indicate the length of the bytes to read in LITTLE ENDIAN encoding.
+- The L1 and L2 bytes indicate the length of the bytes to read in **little endian** encoding.
 - The C1 and C2 bytes are channel (or control bytes). These are `00 00` in case of some requests.
 
 ## Opening a channel
@@ -73,22 +73,7 @@ cd ab 01 00 07 00 00 00  <--- A magical constant 8 bytes (this is the same for o
 
 In this particular example I'm opening a `UAUT` (55 41 55 54) channel with the control bytes 76 5F.
 
-Other channels that can be opened:
-
-| Channel  | Interpretation                            |
-|----------|-------------------------------------------|
- | CSPB     | ?                                         |
- | CTPP     | Used to link actuators / open doors / ??? |
- | ECHO     | ?                                         |
- | ECHO_SRV | ?                                         |
- | FRCG     | Grabs face recognition details            |
- | INFO     | Fetches information from the device       |
- | PUSH     | To set a push token                       |
- | RTPC     | ? Something related to camera ?           |
- | UAUT     | Used for authorizing with the device      |
- | UADM     | Administrator channel                     |
- | UCFG     | Used to extract configuration details     |
- | UDPM     | ? Precursor for UDP calls ?               |
+Other channels that can be opened are listed [here](/channels.md).
 
 In some cases extra data can be passed to opening a channel, which is done like such:
 
@@ -102,7 +87,7 @@ cd ab 01 00 07 00 00 00 <--- Magic constant
 
 I believe the only example is CTPP where this actually happens.
 
-Multiple channels can be opened, but be sure to increase the first channel byte by 1, to ensure that they don't collide. Also, you need to keep state of which channels you have opened, because eventually you'll have to close them.
+Multiple channels can be opened at the same time, but be sure to increase the first channel byte by 1, to ensure that they don't collide with one another. Also, you need to keep state of which channels you have opened, because eventually you'll have to close them.
 
 ## Closing a channel
 
@@ -132,6 +117,7 @@ An example:
 22 3a 31 32 31 7d       <-- End of the JSON blob
 ```
 
+A list of valid JSON requests per channel can be found here: [json-requests.md](json-requests.md).
 The requests can be either JSON or another syntax.
 
 ## CTPP requests (WIP)
