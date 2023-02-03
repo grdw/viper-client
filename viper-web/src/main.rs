@@ -1,6 +1,3 @@
-//mod device;
-//mod viper_client;
-
 use actix_files::Files;
 use actix_web::{
     App,
@@ -187,6 +184,7 @@ async fn open_door(
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
+    println!("Booting a server at http://127.0.0.1:8080");
     HttpServer::new(|| {
         App::new()
             .app_data(
