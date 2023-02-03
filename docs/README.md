@@ -117,7 +117,7 @@ An example:
 22 3a 31 32 31 7d       <-- End of the JSON blob
 ```
 
-A list of valid JSON requests per channel can be found here: [json-requests.md](json-requests.md).
+A list of valid JSON requests per channel can be found [here](json-requests.md).
 The requests can be either JSON or another syntax.
 
 ## CTPP requests (WIP 👷)
