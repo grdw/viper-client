@@ -19,7 +19,7 @@ The `message` is a string which differs per channel:
 | INFO     | server-info       |
 | FRCG     | rcg-get-params    |
 
-The `message-id` can be set to anything, it really doesn't matter to the intercom. For the `INFO` and `FRCG` requests, the generic JSON blob will suffice, as long as you pass the correct `message
+The `message-id` can be set to anything, it really doesn't matter to the intercom. For the `INFO` and `FRCG` requests, the generic JSON blob will suffice, as long as you pass the correct `message`.
 
 ## UAUT
 
