@@ -1,6 +1,7 @@
 mod channel;
 mod ctpp_channel;
 mod helper;
+pub mod device;
 pub mod command;
 
 use channel::Channel;

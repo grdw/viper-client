@@ -15,6 +15,4 @@ Fill out the details in the `.env` file, and simply type:
 cargo run
 ```
 
-You can then browse: `htpp://localhost:8080` where there's a small HTML demo.
-
 Eventually I'm planning to turn this into a library of sorts, but for now considering how experimental this is, I'm leaving it as such
