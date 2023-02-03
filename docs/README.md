@@ -151,17 +151,17 @@ S3 S4 S5 S6 S7 S8 00 00 <-- ..
 - S1 till S8 = Another actuator ID
 - [[ BODY ]] = A dynamic set of bytes
 
-| A1 A2 | Interpretation: | Response | Request |
-|-------|-----------------|----------|---------|
-| 00 18 | ?               | ✅       | ✅      |
-| 20 18 | ?               |          | ✅      |
-| 40 18 | ?               | ✅       | ✅      |
-| 60 18 | ?               | ✅       | ✅      |
-| c0 18 | ?               |          | ✅      |
+| A1 | Interpretation: | Response | Request |
+|----|-----------------|----------|---------|
+| 00 | Acknowledgement | ✅       | ✅      |
+| 20 | Acknowledgement |          | ✅      |
+| 40 | ?               | ✅       | ✅      |
+| 60 | ?               | ✅       | ✅      |
+| c0 | ?               |          | ✅      |
 
 ---
 
-**`c0 18` body types:**
+**`c0` body types:**
 
 The first request body that is seen submitted to the CTPP channel looks like such:
 
@@ -191,7 +191,7 @@ R1 R2 R3 R4 R5 R6 R7 R8 R9 00
 
 ---
 
-**`00 18` and `20 18` body types:**
+**`00` and `20` body types:**
 
 These feel like acknowledgements more than anything else. They look like:
 
@@ -199,17 +199,17 @@ These feel like acknowledgements more than anything else. They look like:
 Q1 Q2 Q3 Q4 00 00
 ```
 
-There are some requests that feature another command, I'm assuming because the viper server allows multi-packets. For now I'm ignoring this behaviour because of how inconsistent this is applied.
+There are some requests that feature another command, I'm assuming because the viper server allows multi-packets. For now I'm ignoring this behaviour because of how inconsistent this is.
 
 - Q1 till Q4 = Random bytes
 
 ---
 
-**`60 18` body types:**
+**`60` body types:**
 
 ---
 
-**`40 18` body types:**
+**`40` body types:**
 
 ## Parsing responses
 ILB
