@@ -1,7 +1,7 @@
 # Viper Client 👷 (WIP)
 This is code for my intercom; specifically for the Comelit Mini Wi-Fi MSFV. This features a ViperClient which can talk to the Comelit Mini Wi-fi MSFV directly; so without intermediary Cloud devices.
 
-This code is quite experimental and not ready to be used for anything real.
+This code is quite experimental and not ready to be used for anything real. Eventually I'm planning to turn this into a library.
 
 ## Setup:
 
@@ -15,4 +15,11 @@ Fill out the details in the `.env` file, and simply type:
 cargo run
 ```
 
-Eventually I'm planning to turn this into a library of sorts, but for now considering how experimental this is, I'm leaving it as such
+This will spawn a little demo application which does nothing more than polling the intercom, and executing a bunch of commands.
+
+For a minimal web version check ["viper-web"](/viper-web).
+
+## Missing features/docs:
+
+- [ ] Understanding of the mystical CTPP channel
+- [ ] UDP support for being able to watch the camera's
