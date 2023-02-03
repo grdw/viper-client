@@ -120,8 +120,8 @@ An example:
 A list of valid JSON requests per channel can be found here: [json-requests.md](json-requests.md).
 The requests can be either JSON or another syntax.
 
-## CTPP requests (WIP)
-This is the only non-JSON channel. There are various type of these requests, of which some are listed in the [icona-bridge-client](https://github.com/madchicken/comelit-client/blob/3e4b05ce7fa7b5d744b39a5f62c6a1d22774c8c0/src/icona-bridge-client.ts#L81-L127).
+## CTPP requests (WIP 👷)
+There are various type of requests that can be submitted over the CTPP channel, some of which some are listed in the [icona-bridge-client](https://github.com/madchicken/comelit-client/blob/3e4b05ce7fa7b5d744b39a5f62c6a1d22774c8c0/src/icona-bridge-client.ts#L81-L127).
 
 The requests are all formatted somewhat similarly:
 
@@ -130,7 +130,7 @@ The requests are all formatted somewhat similarly:
 - The link actuator format is: `<actuator as bytes> 00 <other actuator as bytes>`
 - For some reason a subnet mask is always in there `ff ff ff ff`. God knows why?
   - Initially I thought it had something to do with the server logging which IP makes the request perhaps
--
+- There's a generic format which looks something like this:
 
 **Generic format:**
 
@@ -145,7 +145,7 @@ S3 S4 S5 S6 S7 S8 00 00 <-- ..
 
 - L1, L2 = See "Header" section
 - C1, C2 = See "Header" section
-- A1, A2 = This is probably some request type, but I can't exactly decipher what or why.
+- A1, A2 = This is probably some request type, but I can't exactly decipher what or why. It does seem like A1 is an instruction of some kind, and A2 indicates how long the footer is (since they're all 24 bytes in length).
 - B1, B2, B3, B4 = These are random bytes; it just feels like fudging. They do sometimes bump up or down, or change all 4 completely.
 - R1 till R9 = An actuator ID
 - S1 till S8 = Another actuator ID
@@ -153,11 +153,11 @@ S3 S4 S5 S6 S7 S8 00 00 <-- ..
 
 | A1 A2 | Interpretation: | Response | Request |
 |-------|-----------------|----------|---------|
- | 00 18 | ?               | ✅        | ✅       |
- | 20 18 | ?               |          | ✅       |
- | 40 18 | ?               | ✅        | ✅       |
- | 60 18 | ?               | ✅        | ✅       |
- | c0 18 | ?               |          | ✅       |
+| 00 18 | ?               | ✅       | ✅      |
+| 20 18 | ?               |          | ✅      |
+| 40 18 | ?               | ✅       | ✅      |
+| 60 18 | ?               | ✅       | ✅      |
+| c0 18 | ?               |          | ✅      |
 
 ---
 
