@@ -377,16 +377,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ctrlc"
-version = "3.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1631ca6e3c59112501a9d87fd86f21591ff77acd31331e8a73f8d80a65bbdd71"
-dependencies = [
- "nix",
- "windows-sys 0.42.0",
-]
-
-[[package]]
 name = "derive_more"
 version = "0.99.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -691,18 +681,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "nix"
-version = "0.26.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfdda3d196821d6af13126e40375cdf7da646a96114af134d5f417a9a1dc8e1a"
-dependencies = [
- "bitflags",
- "cfg-if",
- "libc",
- "static_assertions",
-]
-
-[[package]]
 name = "num_cpus"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -967,12 +945,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "static_assertions"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
-
-[[package]]
 name = "syn"
 version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1132,20 +1104,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
-name = "viper-client"
-version = "0.1.0"
-dependencies = [
- "actix-files",
- "actix-web",
- "ctrlc",
- "derive_more",
- "dotenv",
- "rand",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "viper-web"
 version = "0.1.0"
 dependencies = [
@@ -1153,8 +1111,20 @@ dependencies = [
  "actix-web",
  "derive_more",
  "dotenv",
+ "rand",
  "serde",
- "viper-client",
+ "serde_json",
+ "viper_client",
+]
+
+[[package]]
+name = "viper_client"
+version = "0.1.0"
+dependencies = [
+ "dotenv",
+ "rand",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,12 +1,9 @@
-mod device;
-mod viper_client;
-
-use device::Device;
 use dotenv::dotenv;
 use std::env;
 use std::io;
 use std::{thread, time::Duration};
 use viper_client::{ViperClient};
+use viper_client::device::Device;
 use viper_client::command::CommandKind;
 
 fn main() -> Result<(), io::Error> {
@@ -34,13 +31,13 @@ fn main() -> Result<(), io::Error> {
     }
 }
 
+// This is an example run purely for testing
 fn on_connect(doorbell_ip: &String,
               doorbell_port: &String,
               token: &String) -> Result<(), io::Error> {
 
     let mut client = ViperClient::new(doorbell_ip, doorbell_port);
 
-    // This is an example run purely for testing
     {
         let uaut = CommandKind::UAUT(token.to_string());
         let uaut_channel = client.channel("UAUT");

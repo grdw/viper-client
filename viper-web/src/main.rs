@@ -15,12 +15,12 @@ use actix_web::{
     web,
 };
 use derive_more::{Display, Error};
-use device::Device;
 use dotenv::dotenv;
 use serde::Serialize;
 use std::{io, env};
 use viper_client::{ViperClient};
 use viper_client::command::{CommandKind};
+use viper_client::device::Device;
 
 #[derive(Debug, Display, Error)]
 enum ViperError {
