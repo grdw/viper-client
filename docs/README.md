@@ -73,7 +73,7 @@ cd ab 01 00 07 00 00 00  <--- A magical constant 8 bytes (this is the same for o
 
 In this particular example I'm opening a `UAUT` (55 41 55 54) channel with the control bytes 76 5F.
 
-Other channels that can be opened are listed [here](/channels.md).
+Other channels that can be opened are listed [here](channels.md).
 
 In some cases extra data can be passed to opening a channel, which is done like such:
 
