@@ -1,7 +1,7 @@
 use std::net::{TcpStream, ToSocketAddrs};
 use std::time::Duration;
 
-const POLL_TIMEOUT: u64 = 750;
+const POLL_TIMEOUT: u64 = 100;
 
 #[derive(Debug)]
 pub struct Device {}
