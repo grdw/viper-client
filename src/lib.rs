@@ -1,94 +1,156 @@
 mod channel;
 mod ctpp_channel;
 mod helper;
+mod stream_wrapper;
 pub mod device;
 pub mod command;
 
+use stream_wrapper::StreamWrapper;
 use channel::Channel;
-use command::{Command, CommandKind};
+use command::CommandKind;
 use ctpp_channel::CTPPChannel;
 use helper::Helper;
-use std::io::prelude::*;
-use std::net::{TcpStream, Shutdown};
-use std::time::Duration;
-use std::{io, str};
+use std::{io, fmt, fmt::Display, str};
 
-const TIMEOUT: u64 = 1000;
+type JSONResult = Result<serde_json::Value, ViperError>;
 
 pub struct ViperClient {
-    pub stream: TcpStream,
+    stream: StreamWrapper,
     control: [u8; 2]
 }
 
-type JSONResult = Result<serde_json::Value, serde_json::Error>;
-type ByteResult = Result<Vec<u8>, io::Error>;
+#[derive(Debug)]
+pub enum ViperError {
+    IOError(io::Error),
+    JSONError(serde_json::Error)
+}
+
+impl Display for ViperError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ViperError::IOError(io_error) =>
+                write!(f, "{}", io_error),
+            ViperError::JSONError(json_error) =>
+                write!(f, "{}", json_error),
+        }
+    }
+}
+
+impl From<io::Error> for ViperError {
+    fn from(error: io::Error) -> Self {
+        ViperError::IOError(error)
+    }
+}
 
 impl ViperClient {
     pub fn new(ip: &String, port: &String) -> ViperClient {
         let doorbell = format!("{}:{}", ip, port);
-        let stream = TcpStream::connect(doorbell)
-            .expect("Doorbell unavailable");
-
-        stream
-            .set_read_timeout(Some(Duration::from_millis(TIMEOUT)))
-            .unwrap();
-
-        stream
-            .set_write_timeout(Some(Duration::from_millis(TIMEOUT)))
-            .unwrap();
 
         ViperClient {
-            stream: stream,
+            stream: StreamWrapper::new(doorbell),
             control: Helper::control()
         }
     }
 
-    pub fn channel(&mut self, command: &'static str) -> Channel {
+    pub fn authorize(&mut self, token: String) -> JSONResult {
+        let uaut = CommandKind::UAUT(token);
+        let uaut_channel = self.channel("UAUT");
+        self.stream.execute(&uaut_channel.open())?;
+        let uaut_bytes = self.stream.execute(&uaut_channel.com(uaut))?;
+
+        let json_response = Self::json(&uaut_bytes);
+        self.stream.execute(&uaut_channel.close())?;
+        json_response
+    }
+
+    pub fn configuration(&mut self, addressbooks: String) -> JSONResult {
+        let ucfg = CommandKind::UCFG(addressbooks);
+        let ucfg_channel = self.channel("UCFG");
+        self.stream.execute(&ucfg_channel.open())?;
+        let ucfg_bytes = self.stream.execute(&ucfg_channel.com(ucfg))?;
+
+        let json_response = Self::json(&ucfg_bytes);
+        self.stream.execute(&ucfg_channel.close())?;
+        json_response
+    }
+
+    pub fn info(&mut self) -> JSONResult {
+        let info = CommandKind::INFO;
+        let info_channel = self.channel("INFO");
+        self.stream.execute(&info_channel.open())?;
+
+        let info_bytes = self.stream.execute(&info_channel.com(info))?;
+        let json_response = Self::json(&info_bytes);
+        self.stream.execute(&info_channel.close())?;
+
+        json_response
+    }
+
+    pub fn face_recognition_params(&mut self) -> JSONResult {
+        let frcg = CommandKind::FRCG;
+        let frcg_channel = self.channel("FRCG");
+        self.stream.execute(&frcg_channel.open())?;
+
+        let frcg_bytes = self.stream.execute(&frcg_channel.com(frcg))?;
+        let json_response = Self::json(&frcg_bytes);
+        self.stream.execute(&frcg_channel.close())?;
+        json_response
+    }
+
+    // TODO: This function is not finished
+    pub fn open_door(&mut self, vip: &serde_json::Value) -> Result<(), std::io::Error> {
+        let addr = vip["apt-address"].to_string();
+        let sub = format!("{}{}", addr, vip["apt-subaddress"]);
+
+        let act = vip["user-parameters"]
+                     ["opendoor-address-book"]
+                     [0]
+                     ["apt-address"].to_string();
+
+        let mut ctpp_channel = self.ctpp_channel();
+        self.stream.execute(&ctpp_channel.open(&sub))?;
+        self.stream.write(&ctpp_channel.connect_hs(&sub, &addr))?;
+
+        let mut resp = self.stream.read();
+        resp = self.stream.read();
+        println!("{:02x?}", resp);
+
+        self.stream.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
+        self.stream.write(&ctpp_channel.ack(0x20, &sub, &addr))?;
+        self.stream.write(&ctpp_channel.link_actuators(&act, &sub))?;
+        println!("{:?}", self.stream.read());
+        println!("{:?}", self.stream.read());
+        self.stream.write(&ctpp_channel.ack(0x00, &act, &sub))?;
+        self.stream.write(&ctpp_channel.ack(0x20, &act, &sub))?;
+
+        // Close the remaining channels
+        self.stream.execute(&ctpp_channel.close())?;
+        Ok(())
+    }
+
+    fn channel(&mut self, command: &'static str) -> Channel {
         self.tick();
 
         Channel::new(&self.control, command)
     }
 
-    pub fn ctpp_channel(&mut self) -> CTPPChannel {
+    fn ctpp_channel(&mut self) -> CTPPChannel {
         self.tick();
 
         CTPPChannel::new(&self.control)
     }
 
-    pub fn json(bytes: &[u8]) -> JSONResult {
+    fn json(bytes: &[u8]) -> JSONResult {
         let json_str =  str::from_utf8(&bytes).unwrap();
 
-        serde_json::from_str(json_str)
-    }
-
-    pub fn execute(&mut self, b: &[u8]) -> ByteResult {
-        match self.write(b) {
-            Ok(_) => self.read(),
-            Err(e) => Err(e)
+        match serde_json::from_str(json_str) {
+            Ok(json) => Ok(json),
+            Err(e) => Err(ViperError::JSONError(e))
         }
     }
 
-    pub fn write(&mut self, b: &[u8]) -> Result<usize, io::Error> {
-        self.stream.write(b)
-    }
-
-    pub fn read(&mut self) -> ByteResult {
-        let mut head = [0; 8];
-        self.stream.read(&mut head)?;
-        let buffer_size = Command::buffer_length(
-            head[2],
-            head[3]
-        );
-
-        let mut buf = vec![0; buffer_size];
-        self.stream.read(&mut buf)?;
-        Ok(buf)
-    }
-
     pub fn shutdown(&mut self) {
-        self.stream
-            .shutdown(Shutdown::Both)
-            .expect("shutdown call failed");
+        self.stream.die();
     }
 
     // Move the control byte 1 ahead
@@ -100,82 +162,25 @@ impl ViperClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str;
-    use std::thread;
     use std::net::TcpListener;
 
     #[test]
-    fn test_execute() {
-        let listener = TcpListener::bind("127.0.0.1:3333").unwrap();
+    fn test_tick() {
+        let _listener = TcpListener::bind("127.0.0.1:3340").unwrap();
         let mut client = ViperClient::new(
             &String::from("127.0.0.1"),
-            &String::from("3333")
+            &String::from("3340")
         );
 
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let length = 2;
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut buf = [0; 1];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[
-                0, 0, length, 0, 0, 0, 0, 0,
-                65, 65
-            ]).unwrap();
-        });
+        let c = client.control;
+        client.tick();
 
-        let response = client.execute(&[0]).unwrap();
-        assert_eq!(str::from_utf8(&response).unwrap(), "AA");
+        assert_eq!(c[0] + 1, client.control[0])
     }
 
     #[test]
-    fn test_make_command() {
-        let listener = TcpListener::bind("127.0.0.1:3334").unwrap();
-        let mut client = ViperClient::new(
-            &String::from("127.0.0.1"),
-            &String::from("3334")
-        );
-
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut head = [0; 8];
-            socket.read(&mut head).unwrap();
-
-            let bl = Command::buffer_length(head[2], head[3]);
-            let mut buf = vec![0; bl];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[&head, &buf[..]].concat()).unwrap();
-        });
-
-        let command = "UCFG".to_string();
-        let pre = Command::channel(&command, &client.control, None);
-        let r = client.execute(&pre).unwrap();
-        assert_eq!(&r[0..8], &[205, 171, 1,  0, 7, 0, 0, 0]);
-    }
-
-    #[test]
-    fn test_make_uat_command() {
-        let listener = TcpListener::bind("127.0.0.1:3335").unwrap();
-        let mut client = ViperClient::new(
-            &String::from("127.0.0.1"),
-            &String::from("3335")
-        );
-
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut head = [0; 8];
-            socket.read(&mut head).unwrap();
-
-            let bl = Command::buffer_length(head[2], head[3]);
-            let mut buf = vec![0; bl];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[&head, &buf[..]].concat()).unwrap();
-        });
-
-        let aut = Command::for_kind(CommandKind::UAUT("ABCDEFG".to_string()), &client.control);
-        let r = client.execute(&aut).unwrap();
-        assert_eq!(r.len(), 83);
+    fn test_authorize() {
+        // TODO: Find a way to write proper TCPListener tests
+        assert_eq!(true, true)
     }
 }

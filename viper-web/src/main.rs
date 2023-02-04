@@ -14,13 +14,13 @@ use actix_web::{
 use derive_more::{Display, Error};
 use dotenv::dotenv;
 use serde::Serialize;
+use serde_json::json;
 use std::{io, env};
-use viper_client::{ViperClient};
-use viper_client::command::{CommandKind};
+use viper_client::{ViperClient, ViperError};
 use viper_client::device::Device;
 
 #[derive(Debug, Display, Error)]
-enum ViperError {
+enum ViperHTTPError {
     #[display(fmt = "internal error")]
     InternalError,
 
@@ -31,19 +31,25 @@ enum ViperError {
     Unauthorized
 }
 
-impl From<io::Error> for ViperError {
+impl From<ViperError> for ViperHTTPError {
+    fn from(_error: ViperError) -> Self {
+        ViperHTTPError::InternalError
+    }
+}
+
+impl From<io::Error> for ViperHTTPError {
     fn from(_error: io::Error) -> Self {
-        ViperError::InternalError
+        ViperHTTPError::InternalError
     }
 }
 
-impl From<serde_json::Error> for ViperError {
+impl From<serde_json::Error> for ViperHTTPError {
     fn from(_error: serde_json::Error) -> Self {
-        ViperError::NotJSONError
+        ViperHTTPError::NotJSONError
     }
 }
 
-impl error::ResponseError for ViperError {
+impl error::ResponseError for ViperHTTPError {
     fn error_response(&self) -> HttpResponse {
         HttpResponse::build(self.status_code())
             .insert_header(ContentType::html())
@@ -52,9 +58,9 @@ impl error::ResponseError for ViperError {
 
     fn status_code(&self) -> StatusCode {
         match *self {
-            ViperError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
-            ViperError::NotJSONError => StatusCode::INTERNAL_SERVER_ERROR,
-            ViperError::Unauthorized => StatusCode::UNAUTHORIZED,
+            ViperHTTPError::InternalError => StatusCode::INTERNAL_SERVER_ERROR,
+            ViperHTTPError::NotJSONError => StatusCode::INTERNAL_SERVER_ERROR,
+            ViperHTTPError::Unauthorized => StatusCode::UNAUTHORIZED,
         }
     }
 }
@@ -100,33 +106,18 @@ async fn poll_door(_req: HttpRequest,
 async fn list_doors(
           _req: HttpRequest,
           config: web::Data<Config>
-      ) -> Result<impl Responder, ViperError> {
+      ) -> Result<impl Responder, ViperHTTPError> {
 
     let mut client = ViperClient::new(&config.ip, &config.port);
-
-    let uaut = CommandKind::UAUT(config.token.to_string());
-    let ucfg = CommandKind::UCFG("all".to_string());
-    let uaut_channel = client.channel("UAUT");
-    let ucfg_channel = client.channel("UCFG");
-
-    let auth_json = {
-        client.execute(&uaut_channel.open())?;
-        let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
-        ViperClient::json(&uaut_bytes)?
-    };
+    let auth_json = client.authorize(config.token.to_string())?;
 
     if auth_json["response-code"] == 200 {
-        client.execute(&ucfg_channel.open())?;
-        let ucfg_bytes = client.execute(&ucfg_channel.com(ucfg))?;
-        let ucfg_json = ViperClient::json(&ucfg_bytes)?;
-
-        client.execute(&uaut_channel.close())?;
-        client.execute(&ucfg_channel.close())?;
+        let config = client.configuration("all".to_string())?;
         client.shutdown();
-        Ok(web::Json(ucfg_json["vip"].clone()))
+        Ok(web::Json(config["vip"].clone()))
     } else {
         println!("{:?}", auth_json);
-        Err(ViperError::Unauthorized)
+        Err(ViperHTTPError::Unauthorized)
     }
 }
 
@@ -134,49 +125,31 @@ async fn list_doors(
 async fn open_door(
           _req: HttpRequest,
           config: web::Data<Config>
-      ) -> Result<impl Responder, ViperError> {
+      ) -> Result<impl Responder, ViperHTTPError> {
 
     let mut client = ViperClient::new(&config.ip, &config.port);
-    let uaut = CommandKind::UAUT(config.token.to_string());
-    let uaut_channel = client.channel("UAUT");
-
-    let auth_json = {
-        client.execute(&uaut_channel.open())?;
-        let uaut_bytes = client.execute(&uaut_channel.com(uaut))?;
-        ViperClient::json(&uaut_bytes)?
-    };
+    let auth_json = client.authorize(config.token.to_string())?;
 
     if auth_json["response-code"] == 200 {
-        let addr = "SB000006".to_string();
-        let sub  = "SB0000062".to_string();
-        let act  = "SB1000001".to_string();
-        let mut ctpp_channel = client.ctpp_channel();
-        client.execute(&ctpp_channel.open(&sub))?;
-        client.write(&ctpp_channel.connect_hs(&sub, &addr))?;
-
-        loop {
-            // You need to read until you get a [0x60, 0x18]
-            // as a response; which means success :^)
-            let bytes = client.read()?;
-            if &bytes[0..2] == &[0x60, 0x18] {
-                break;
+        let thingy = json!({
+            "apt-address": "SB000006",
+            "apt-subaddress": 2,
+            "user-paramaters": {
+                "opendoor-address-book": [
+                    {
+                        "apt-address": "SB1000001"
+                    }
+                ]
             }
-        }
+        });
 
-        client.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
-        client.write(&ctpp_channel.ack(0x20, &sub, &addr))?;
-
-        client.write(&ctpp_channel.link_actuators(&act, &sub))?;
-        println!("{:?}", client.read());
-
-        client.execute(&uaut_channel.close())?;
-        client.execute(&ctpp_channel.close())?;
+        client.open_door(&thingy)?;
         client.shutdown();
 
         Ok(web::Json(DoorOpenRequest { success: true, error: vec![] }))
     } else {
         println!("{:?}", auth_json);
-        Err(ViperError::Unauthorized)
+        Err(ViperHTTPError::Unauthorized)
     }
 }
 
