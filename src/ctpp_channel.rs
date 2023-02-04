@@ -79,11 +79,14 @@ impl CTPPChannel {
     }
 
     pub fn confirm_handshake(&self, r: &[u8]) -> bool {
-        r[0] == 0x60 &&
-            self.bitmask[0] + 0x80 == r[2] &&
-            self.bitmask[1] == r[3] &&
-            self.bitmask[2] == r[5] - 1 &&
-            self.bitmask[3] == r[4]
+        r[0] == 0x60 && self.confirm(r)
+    }
+
+    pub fn confirm(&self, r: &[u8]) -> bool {
+        self.bitmask[0] + 0x80 == r[2] &&
+        self.bitmask[1] == r[3] &&
+        self.bitmask[2] == r[5] - 1 &&
+        self.bitmask[3] == r[4]
     }
 
     pub fn ack(&mut self,

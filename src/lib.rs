@@ -122,10 +122,13 @@ impl ViperClient {
         self.stream.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
         self.stream.write(&ctpp_channel.ack(0x20, &sub, &addr))?;
         self.stream.write(&ctpp_channel.link_actuators(&act, &sub))?;
-        println!("{:?}", self.stream.read());
-        println!("{:?}", self.stream.read());
-        self.stream.write(&ctpp_channel.ack(0x00, &act, &sub))?;
-        self.stream.write(&ctpp_channel.ack(0x20, &act, &sub))?;
+
+        let resp = self.stream.read()?;
+        if ctpp_channel.confirm(resp) {
+            // ????
+        } else {
+            // raise an error
+        }
 
         // Close the remaining channels
         self.stream.execute(&ctpp_channel.close())?;
