@@ -111,9 +111,13 @@ impl ViperClient {
         self.stream.execute(&ctpp_channel.open(&sub))?;
         self.stream.write(&ctpp_channel.connect_hs(&sub, &addr))?;
 
-        let mut resp = self.stream.read();
-        resp = self.stream.read();
-        println!("{:02x?}", resp);
+        loop {
+            let resp = self.stream.read()?;
+            println!("{:02x?}", resp);
+            if ctpp_channel.confirm_handshake(&resp) {
+                break;
+            }
+        }
 
         self.stream.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
         self.stream.write(&ctpp_channel.ack(0x20, &sub, &addr))?;

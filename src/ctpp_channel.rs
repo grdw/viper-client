@@ -78,6 +78,14 @@ impl CTPPChannel {
         Command::make(&req, &self.control)
     }
 
+    pub fn confirm_handshake(&self, r: &[u8]) -> bool {
+        r[0] == 0x60 &&
+            self.bitmask[0] + 0x80 == r[2] &&
+            self.bitmask[1] == r[3] &&
+            self.bitmask[2] == r[5] - 1 &&
+            self.bitmask[3] == r[4]
+    }
+
     pub fn ack(&mut self,
                prefix: u8,
                a1: &String,
@@ -89,7 +97,7 @@ impl CTPPChannel {
         ].concat();
 
         if prefix == 0x00 {
-            self.bitmask = Helper::gen_ran(4);
+            self.tick_mask();
         }
 
         CTPPChannel::set_bytes(&mut req, &[prefix], 0);
@@ -121,8 +129,7 @@ impl CTPPChannel {
     }
 
     fn tick_mask(&mut self) {
-        self.bitmask[1] += 1;
-        self.bitmask[2] += 1;
+        self.bitmask[3] += 1;
     }
 
     fn set_bytes(template: &mut [u8], bytes: &[u8], offset: usize) {
@@ -170,12 +177,14 @@ mod tests {
     #[test]
     fn test_ack() {
         let mut ctpp = CTPPChannel::new(&[1, 2]);
+        let mask = ctpp.bitmask[3];
         let conn = ctpp.ack(
             0x00,
             &String::from("SB0000062"),
             &String::from("SB000006")
         );
 
+        assert_eq!(conn[13], mask + 1);
         assert_eq!(&conn[2], &32);
         assert_eq!(&conn[8..10], &[0, 24]);
         assert_eq!(str::from_utf8(&conn[20..29]).unwrap(), "SB0000062");
@@ -194,6 +203,35 @@ mod tests {
         // This is to test that the bitmask doesn't swap between
         // 0x00 and 0x20 calls
         assert_eq!(&conn_2[10..14], &conn[10..14]);
+    }
+
+    #[test]
+    fn test_confirm_handshake() {
+        let mut ctpp = CTPPChannel {
+            control: [1, 2],
+            bitmask: vec![0x42, 0x70, 0x2f, 0x50]
+        };
+
+        assert_eq!(
+            ctpp.confirm_handshake(
+                &[0x00, 0x18, 0xc2, 0x70, 0x50, 0x30]
+            ),
+            false
+        );
+
+        assert_eq!(
+            ctpp.confirm_handshake(
+                &[0x60, 0x18, 0xc2, 0x70, 0x50, 0x30]
+            ),
+            true
+        );
+
+        assert_eq!(
+            ctpp.confirm_handshake(
+                &[0x60, 0x17, 0xc2, 0x70, 0x50, 0x30]
+            ),
+            true
+        );
     }
 
     #[test]
