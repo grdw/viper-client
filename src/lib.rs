@@ -124,7 +124,7 @@ impl ViperClient {
         self.stream.write(&ctpp_channel.link_actuators(&act, &sub))?;
 
         let resp = self.stream.read()?;
-        if ctpp_channel.confirm(resp) {
+        if ctpp_channel.confirm(&resp) {
             // ????
         } else {
             // raise an error
