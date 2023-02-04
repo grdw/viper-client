@@ -211,8 +211,98 @@ There are some requests that feature another command, I'm assuming because the v
 
 **`40` body types:**
 
+There are quite a lot of different 0x40-body types, and from what I can tell they deal with the RTPC channel and the UDPM channel in some shape or way. It doesn't make a whole lot of sense to single these out, but talk about them in context:
+
+*Example 1*:
+
+```
+W: [ UDPM ] [09, 7b]
+R: [00, 18] [9f, 6b, d0, fe, 00, 00]
+W: [40, 18] [1f, 6b, fe, d0, 00, 08, 00, 03, 49, 00, 27, 00, 00, 00]
+R: [00, 18] [9f, 6b, d0, ff, 00, 00]
+R: [40, 18] [9f, 6b, d0, ff, 00, 08, 00, 03, 50, 03, 3b, 00, 00, 00]
+W: [00, 18] [1f, 6b, ff, d1, 00, 00]
+R: [40, 18] [9f, 6b, d1, ff, 00, 02, 00, 0c, 00, 00]
+W: [00, 18] [1f, 6b, ff, d2, 00, 00]
+W: [ RTPC ] [0a, 7b]
+W: [40, 18] [1f, 6b, ff, d2, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, 0a, 7b, 00, 00]
+R: [ RTPC ] [22, e0]
+R: [40, 18] [9f, 6b, d2, ff, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, 22, e0, 00, 00]
+W: [00, 18] [1f, 6b, ff, d3, 00, 00]
+R: [00, 18] [9f, 6b, d2, 00, 00, 00]
+W: [40, 18] [1f, 6b, 00, d3, 00, 1a, 00, 11, 14, 32, 00, 00, 00, 00, 0b, 7b, ff, ff, 00, 00, 00, 00, 20, 03, e0, 01, 40, 01, f0, 00, 10, 00, 00, 00]
+R: [00, 18] [9f, 6b, d3, 01, 00, 00]
+```
+
+*Example 2*:
+
+```
+...
+W: [ UDPM ] [23, 12]
+R: [00, 18] [a7, e0, d5, 1c, 00, 00]
+W: [40, 18] [27, e0, 1c, d5, 00, 08, 00, 03, 49, 00, 27, 00, 00, 00]
+R: [00, 18] [a7, e0, d5, 1d, 00, 00]
+R: [40, 18] [a7, e0, d5, 1d, 00, 08, 00, 03, 50, 03, 3b, 00, 00, 00]
+W: [00, 18] [27, e0, 1d, d6, 00, 00]
+R: [40, 18] [a7, e0, d6, 1d, 00, 02, 00, 0c, 00, 00]
+W: [00, 18] [27, e0, 1d, d7, 00, 00]
+W: [ RTPC ] [24, 12]
+W: [40, 18] [27, e0, 1d, d7, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, 24, 12, 00, 00]
+R: [ RTPC ] [86, 8e]
+R: [40, 18] [a7, e0, d7, 1d, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, 86, 8e, 00, 00]
+W: [00, 18] [27, e0, 1d, d8, 00, 00]
+R: [00, 18] [a7, e0, d7, 1e, 00, 00]
+W: [40, 18] [27, e0, 1e, d8, 00, 1a, 00, 11, 14, 32, 00, 00, 00, 00, 25, 12, ff, ff, 00, 00, 00, 00, 20, 03, e0, 01, 40, 01, f0, 00, 10, 00, 00, 00]
+R: [00, 18] [a7, e0, d8, 1f, 00, 00]
+...
+```
+
+*Example 3*:
+
+```
+...
+W: [ UDPM ] [7e, 5f]
+R: [00, 18] [f0, 8d, f9, 15, 00, 00]
+W: [40, 18] [70, 8d, 15, f9, 00, 08, 00, 03, 49, 00, 27, 00, 00, 00]
+R: [00, 18] [f0, 8d, f9, 16, 00, 00]
+R: [40, 18] [f0, 8d, f9, 16, 00, 08, 00, 03, 50, 03, 3b, 00, 00, 00]
+W: [00, 18] [70, 8d, 16, fa, 00, 00]
+R: [40, 18] [f0, 8d, fa, 16, 00, 02, 00, 0c, 00, 00]
+W: [00, 18] [70, 8d, 16, fb, 00, 00]
+W: [ RTPC ] [7f, 5f]
+W: [40, 18] [70, 8d, 16, fb, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, 7f, 5f, 00, 00]
+R: [ RTPC ] [bc, ea]
+R: [40, 18] [f0, 8d, fb, 16, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, bc, ea, 00, 00]
+W: [00, 18] [70, 8d, 16, fc, 00, 00]
+R: [00, 18] [f0, 8d, fb, 17, 00, 00]
+W: [40, 18] [70, 8d, 17, fc, 00, 1a, 00, 11, 14, 32, 00, 00, 00, 00, 80, 5f, ff, ff, 00, 00, 00, 00, 20, 03, e0, 01, 40, 01, f0, 00, 10, 00, 00, 00]
+R: [00, 18] [f0, 8d, fc, 18, 00, 00]
+...
+```
+
+In all three examples the `UDPM` channel is opened. A response is being read from the CTPP channel which belonged to the previous `c0` request which I cut off from the examples. The first 0x40 example to write is:
+
+```
+Q1, Q2, Q3, Q4, 00, 08, 00, 03, 49, 00, 27, 00, 00, 00
+```
+
+These are all identical except for the first 4 bytes, which are control bytes. We read of a two replies, a 0x00 reply and a 0x40, both need to hold true to the CTPP-response rule (TODO: note this rule down). We then acknowledge that we got both replies, by writing a 0x00, where we only bump Q4 by 1. We then read off a 0x40 reply, acknowledge that one by bumping Q4 by 1 again. Then we open the RTPC channel, and send another 0x40 request:
+
+```
+Q1, Q2, Q3, Q4, 00, 0a, 00, 11, 18, 02, 00, 00, 00, 00, R1, R2, 00, 00
+```
+
+R1 and R2 are the channel bytes that belong to the RTPC channel. Again, we read off two responses, one for opening the RTPC channel, and another for the 0x40 request. We need to affirm that the returned bytes match with each other. In the next step we execute another 0x40:
+
+```
+Q1, Q2, Q3, Q4, 00, 1a, 00, 11, 14, 32, 00, 00, 00, 00, 80, 5f, ff, ff, 00, 00, 00, 00, [20, 03, e0, 01, 40, 01, f0, 00, 10], 00, 00, 00
+                                                                                         ????????????
+```
+
+After this is over, we can stream bytes from the camera (?).
+
+
 ## Parsing responses
-ILB
 
 # UDP Requests
 ILB
