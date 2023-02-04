@@ -117,7 +117,9 @@ impl CTPPChannel {
             &TAIL_TEMPLATE[..]
         ].concat();
 
-        CTPPChannel::set_bytes(&mut req, &Helper::gen_ran(4), 2);
+        self.bitmask = Helper::gen_ran(4);
+
+        CTPPChannel::set_bytes(&mut req, &self.bitmask, 2);
         CTPPChannel::set_bytes(&mut req, &a1.as_bytes(), 10);
         CTPPChannel::set_bytes(&mut req, &a2.as_bytes(), 20);
         CTPPChannel::set_bytes(&mut req, &Helper::gen_ran(4), 32);
@@ -207,7 +209,7 @@ mod tests {
 
     #[test]
     fn test_confirm_handshake() {
-        let mut ctpp = CTPPChannel {
+        let ctpp = CTPPChannel {
             control: [1, 2],
             bitmask: vec![0x42, 0x70, 0x2f, 0x50]
         };
