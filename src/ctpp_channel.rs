@@ -1,4 +1,5 @@
-use super::{Command, Helper};
+use crate::command::Command;
+use crate::helper::Helper;
 
 // Every replaceable character in this template
 // is marked as 0xFF not 0xff.

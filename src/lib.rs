@@ -7,10 +7,10 @@ pub mod command;
 
 use stream_wrapper::StreamWrapper;
 use channel::Channel;
-use command::{Command, CommandKind};
-//use ctpp_channel::CTPPChannel;
+use command::CommandKind;
+use ctpp_channel::CTPPChannel;
 use helper::Helper;
-use std::{io, fmt, fmt::Display, str, error::Error};
+use std::{io, fmt, fmt::Display, str};
 
 type JSONResult = Result<serde_json::Value, ViperError>;
 
@@ -97,17 +97,48 @@ impl ViperClient {
         json_response
     }
 
+    // TODO: This function is not finished
+    pub fn open_door(&mut self, vip: &serde_json::Value) -> Result<(), std::io::Error> {
+        let addr = vip["apt-address"].to_string();
+        let sub = format!("{}{}", addr, vip["apt-subaddress"]);
+
+        let act = vip["user-parameters"]
+                     ["opendoor-address-book"]
+                     [0]
+                     ["apt-address"].to_string();
+
+        let mut ctpp_channel = self.ctpp_channel();
+        self.stream.execute(&ctpp_channel.open(&sub))?;
+        self.stream.write(&ctpp_channel.connect_hs(&sub, &addr))?;
+
+        let mut resp = self.stream.read();
+        resp = self.stream.read();
+        println!("{:02x?}", resp);
+
+        self.stream.write(&ctpp_channel.ack(0x00, &sub, &addr))?;
+        self.stream.write(&ctpp_channel.ack(0x20, &sub, &addr))?;
+        self.stream.write(&ctpp_channel.link_actuators(&act, &sub))?;
+        println!("{:?}", self.stream.read());
+        println!("{:?}", self.stream.read());
+        self.stream.write(&ctpp_channel.ack(0x00, &act, &sub))?;
+        self.stream.write(&ctpp_channel.ack(0x20, &act, &sub))?;
+
+        // Close the remaining channels
+        self.stream.execute(&ctpp_channel.close())?;
+        Ok(())
+    }
+
     fn channel(&mut self, command: &'static str) -> Channel {
         self.tick();
 
         Channel::new(&self.control, command)
     }
 
-    //pub fn ctpp_channel(&mut self) -> CTPPChannel {
-    //    self.tick();
+    fn ctpp_channel(&mut self) -> CTPPChannel {
+        self.tick();
 
-    //    CTPPChannel::new(&self.control)
-    //}
+        CTPPChannel::new(&self.control)
+    }
 
     fn json(bytes: &[u8]) -> JSONResult {
         let json_str =  str::from_utf8(&bytes).unwrap();
@@ -135,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_tick() {
-        let listener = TcpListener::bind("127.0.0.1:3340").unwrap();
+        let _listener = TcpListener::bind("127.0.0.1:3340").unwrap();
         let mut client = ViperClient::new(
             &String::from("127.0.0.1"),
             &String::from("3340")

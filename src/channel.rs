@@ -1,4 +1,4 @@
-use super::{Command, CommandKind};
+use crate::command::{Command, CommandKind};
 
 pub struct Channel {
     command: String,
