@@ -228,9 +228,9 @@ mod tests {
 
         assert_eq!(
             ctpp.confirm_handshake(
-                &[0x60, 0x17, 0xc2, 0x70, 0x50, 0x30]
+                &[0x60, 0x18, 0xc1, 0x70, 0x50, 0x30]
             ),
-            true
+            false
         );
     }
 
