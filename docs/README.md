@@ -299,7 +299,7 @@ Q1, Q2, Q3, Q4, 00, 1a, 00, 11, 14, 32, 00, 00, 00, 00, 80, 5f, ff, ff, 00, 00, 
                                                                                          ????????????
 ```
 
-After this is over, we can stream bytes from the camera (?).
+After this is over, we can read bytes from the camera, at the UDPM channel.
 
 
 ## Parsing responses
