@@ -64,50 +64,31 @@ mod tests {
     use super::*;
     use std::str;
     use std::thread;
-    use std::net::TcpListener;
+    use crate::test_helper::SimpleTcpListener;
     use crate::command::CommandKind;
 
     #[test]
     fn test_execute() {
-        let listener = TcpListener::bind("127.0.0.1:3333").unwrap();
+        let listener = SimpleTcpListener::new("127.0.0.1:3333");
         let mut client = StreamWrapper::new(
             String::from("127.0.0.1:3333")
         );
 
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let length = 2;
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut buf = [0; 1];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[
-                0, 0, length, 0, 0, 0, 0, 0,
-                65, 65
-            ]).unwrap();
-        });
+        thread::spawn(move || listener.echo());
 
-        let response = client.execute(&[0]).unwrap();
+        let command = Command::make(&[65, 65], &[0, 0]);
+        let response = client.execute(&command).unwrap();
         assert_eq!(str::from_utf8(&response).unwrap(), "AA");
     }
 
     #[test]
     fn test_make_command() {
-        let listener = TcpListener::bind("127.0.0.1:3334").unwrap();
+        let listener = SimpleTcpListener::new("127.0.0.1:3334");
         let mut client = StreamWrapper::new(
             String::from("127.0.0.1:3334")
         );
 
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut head = [0; 8];
-            socket.read(&mut head).unwrap();
-
-            let bl = Command::buffer_length(head[2], head[3]);
-            let mut buf = vec![0; bl];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[&head, &buf[..]].concat()).unwrap();
-        });
+        thread::spawn(move || listener.echo());
 
         let command = "UCFG".to_string();
         let pre = Command::channel(&command, &[0, 0], None);
@@ -117,22 +98,12 @@ mod tests {
 
     #[test]
     fn test_make_uat_command() {
-        let listener = TcpListener::bind("127.0.0.1:3335").unwrap();
+        let listener = SimpleTcpListener::new("127.0.0.1:3335");
         let mut client = StreamWrapper::new(
             String::from("127.0.0.1:3335")
         );
 
-        // This is the doorbell server essentially
-        thread::spawn(move || {
-            let (mut socket, _addr) = listener.accept().unwrap();
-            let mut head = [0; 8];
-            socket.read(&mut head).unwrap();
-
-            let bl = Command::buffer_length(head[2], head[3]);
-            let mut buf = vec![0; bl];
-            socket.read(&mut buf).unwrap();
-            socket.write(&[&head, &buf[..]].concat()).unwrap();
-        });
+        thread::spawn(move || listener.echo());
 
         let aut = Command::for_kind(
             CommandKind::UAUT("ABCDEFG".to_string()),

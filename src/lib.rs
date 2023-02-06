@@ -5,6 +5,9 @@ mod stream_wrapper;
 pub mod device;
 pub mod command;
 
+#[cfg(test)]
+mod test_helper;
+
 use stream_wrapper::StreamWrapper;
 use channel::Channel;
 use command::CommandKind;
