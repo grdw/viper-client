@@ -1,4 +1,5 @@
 use crate::command::Command;
+use std::io;
 use std::io::prelude::*;
 use std::net::TcpListener;
 
@@ -13,14 +14,34 @@ impl SimpleTcpListener {
         }
     }
 
-    pub fn echo(&self) {
+    pub fn echo(&self) -> io::Result<()> {
         let (mut socket, _addr) = self.listener.accept().unwrap();
         let mut head = [0; 8];
-        socket.read(&mut head).unwrap();
+        socket.read(&mut head)?;
 
         let bl = Command::buffer_length(head[2], head[3]);
         let mut buf = vec![0; bl];
-        socket.read(&mut buf).unwrap();
-        socket.write(&[&head, &buf[..]].concat()).unwrap();
+        socket.read(&mut buf)?;
+        socket.write(&[&head, &buf[..]].concat())?;
+        Ok(())
+    }
+
+    pub fn mock_server(&self, responses: Vec<Vec<u8>>) -> io::Result<()> {
+        for socket in self.listener.incoming() {
+            let mut count = 0;
+            let mut stream = socket?;
+
+            loop {
+                let mut head = [0; 8];
+                stream.read(&mut head)?;
+                let bl = Command::buffer_length(head[2], head[3]);
+                let mut buf = vec![0; bl];
+                stream.read(&mut buf)?;
+                stream.write(&responses[count])?;
+                count += 1;
+            }
+        }
+
+        Ok(())
     }
 }
