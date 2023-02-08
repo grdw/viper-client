@@ -172,11 +172,13 @@ impl ViperClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::net::TcpListener;
+    use std::thread;
+    use crate::command::Command;
+    use crate::test_helper::SimpleTcpListener;
 
     #[test]
     fn test_tick() {
-        let _listener = TcpListener::bind("127.0.0.1:3340").unwrap();
+        let _listener = SimpleTcpListener::new("127.0.0.1:3340");
         let mut client = ViperClient::new(
             &String::from("127.0.0.1"),
             &String::from("3340")
@@ -190,7 +192,36 @@ mod tests {
 
     #[test]
     fn test_authorize() {
-        // TODO: Find a way to write proper TCPListener tests
-        assert_eq!(true, true)
+        let listener = SimpleTcpListener::new("127.0.0.1:3341");
+        let mut client = ViperClient::new(
+            &String::from("127.0.0.1"),
+            &String::from("3341")
+        );
+
+        thread::spawn(move || {
+            let mocked_ok = [
+                0xcd, 0xab, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00,
+                0x1a, 0x12, 0x00, 0x00
+            ];
+
+            let mocked_json = r#"{
+                "message":"access",
+                "message-type":"response",
+                "message-id":5,
+                "response-code":200,
+                "response-string":"Access Granted"
+            }"#;
+
+            listener.mock_server(
+                vec![
+                    Command::make(&mocked_ok, &[0, 0]),
+                    Command::make(&mocked_json.as_bytes(), &[0, 0])
+                ]
+            )
+        });
+
+        let resp = client.authorize(String::from("TESTTOKEN")).unwrap();
+        assert_eq!(resp["response-string"], "Access Granted");
+        assert_eq!(resp["response-code"], 200)
     }
 }
