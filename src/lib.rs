@@ -199,7 +199,7 @@ mod tests {
         );
 
         thread::spawn(move || {
-            let mocked_ok = [
+            let mocked_open = [
                 0xcd, 0xab, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00,
                 0x1a, 0x12, 0x00, 0x00
             ];
@@ -214,8 +214,9 @@ mod tests {
 
             listener.mock_server(
                 vec![
-                    Command::make(&mocked_ok, &[0, 0]),
-                    Command::make(&mocked_json.as_bytes(), &[0, 0])
+                    Command::make(&mocked_open, &[0, 0]),
+                    Command::make(&mocked_json.as_bytes(), &[0, 0]),
+                    Command::make(&[], &[0, 0]) // Closing the channel
                 ]
             )
         });

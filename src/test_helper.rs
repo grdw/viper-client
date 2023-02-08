@@ -27,19 +27,17 @@ impl SimpleTcpListener {
     }
 
     pub fn mock_server(&self, responses: Vec<Vec<u8>>) -> io::Result<()> {
-        for socket in self.listener.incoming() {
-            let mut count = 0;
-            let mut stream = socket?;
+        let (mut stream, _addr) = self.listener.accept().unwrap();
+        let mut count = 0;
 
-            loop {
-                let mut head = [0; 8];
-                stream.read(&mut head)?;
-                let bl = Command::buffer_length(head[2], head[3]);
-                let mut buf = vec![0; bl];
-                stream.read(&mut buf)?;
-                stream.write(&responses[count])?;
-                count += 1;
-            }
+        while count < responses.len() {
+            let mut head = [0; 8];
+            stream.read(&mut head)?;
+            let bl = Command::buffer_length(head[2], head[3]);
+            let mut buf = vec![0; bl];
+            stream.read(&mut buf)?;
+            stream.write(&responses[count])?;
+            count += 1;
         }
 
         Ok(())
