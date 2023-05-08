@@ -5,6 +5,8 @@ This code is quite experimental and not ready to be used for anything real. Even
 
 ## Setup:
 
+To test this library either use ["viper-minimal"](/viper-minimal) or ["viper-web"](/viper-web) to have an interactive demo. The way to set up both these projects:
+
 ```bash
 cp .env.example .env
 ```
@@ -15,9 +17,7 @@ Fill out the details in the `.env` file, and simply type:
 cargo run
 ```
 
-This will spawn a little demo application which does nothing more than polling the intercom, and executing a bunch of commands.
-
-For a minimal web version check ["viper-web"](/viper-web).
+This will spawn a little demo application either in your terminal, or a web-server which you can browse to. Please read the respective README's of the demo applications for more information.
 
 ## Missing features/docs:
 
