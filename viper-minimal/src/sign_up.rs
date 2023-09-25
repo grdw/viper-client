@@ -17,8 +17,8 @@ fn main() -> Result<(), ViperError> {
 
         if is_up {
             println!("Connected!");
-            let mut client = ViperClient::new(doorbell_ip, doorbell_port);
-            let sign_up = client.sign_up(email)?;
+            let mut client = ViperClient::new(&doorbell_ip, &doorbell_port);
+            let sign_up = client.sign_up(&email)?;
             println!("Your token is: {}", sign_up["user-token"].to_string());
             client.shutdown();
             return Ok(())
