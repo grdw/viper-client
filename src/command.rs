@@ -63,7 +63,7 @@ impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
         let message_type = String::from("request");
 
-        match kind {
+        let json = match kind {
             CommandKind::UAUT(token) => {
                 let uaut = UAUT {
                     message: String::from("access"),
@@ -72,8 +72,7 @@ impl Command {
                     user_token: token
                 };
 
-                let json = serde_json::to_string(&uaut).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&uaut).unwrap()
             },
 
             CommandKind::UCFG(addressbooks) => {
@@ -84,8 +83,7 @@ impl Command {
                     addressbooks: addressbooks
                 };
 
-                let json = serde_json::to_string(&ucfg).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&ucfg).unwrap()
             },
 
             CommandKind::INFO => {
@@ -95,8 +93,7 @@ impl Command {
                     message_id: 1
                 };
 
-                let json = serde_json::to_string(&info).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&info).unwrap()
             },
 
             CommandKind::FRCG => {
@@ -106,8 +103,7 @@ impl Command {
                     message_id: 121
                 };
 
-                let json = serde_json::to_string(&frcg).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&frcg).unwrap()
             },
 
             CommandKind::RemoveAllUsers(requester) => {
@@ -118,8 +114,7 @@ impl Command {
                     message_id: 1
                 };
 
-                let json = serde_json::to_string(&fact).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&fact).unwrap()
             },
 
             CommandKind::ActivateUser(email) => {
@@ -131,10 +126,11 @@ impl Command {
                     message_id: 1
                 };
 
-                let json = serde_json::to_string(&fact).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&fact).unwrap()
             }
-        }
+        };
+
+        Command::make(&json.as_bytes(), control)
     }
 
     pub fn buffer_length(b2: u8, b3: u8) -> usize {
