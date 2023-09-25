@@ -13,3 +13,7 @@ serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 dotenv = "0.15.0"
 rand = "0.8.5"
+
+[[bin]]
+name = "sign_up"
+path = "src/sign_up.rs"
