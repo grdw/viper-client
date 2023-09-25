@@ -7,6 +7,7 @@ use viper_client::device::Device;
 fn main() -> Result<(), ViperError> {
     dotenv().ok();
 
+    let email = env::var("EMAIL").unwrap();
     let doorbell_ip = env::var("DOORBELL_IP").unwrap();
     let doorbell_port = env::var("DOORBELL_PORT").unwrap();
     let token = env::var("TOKEN").unwrap();
@@ -17,7 +18,7 @@ fn main() -> Result<(), ViperError> {
 
         if is_up && !prev {
             println!("Connected!");
-            on_connect(&doorbell_ip, &doorbell_port, &token)?;
+            on_connect(&doorbell_ip, &doorbell_port, &token, &email)?;
         } else if !is_up && prev {
             println!("Disconnected!");
         } else if !is_up && !prev {
@@ -32,20 +33,27 @@ fn main() -> Result<(), ViperError> {
 // This is an example run purely for testing
 fn on_connect(doorbell_ip: &String,
               doorbell_port: &String,
-              token: &String) -> Result<(), ViperError> {
+              token: &String,
+              email: &String) -> Result<(), ViperError> {
 
     let mut client = ViperClient::new(doorbell_ip, doorbell_port);
 
-    println!("UAUT: {:?}", client.authorize(token.to_string())?);
+    let sign_up = client.sign_up(email)?;
+    println!("{:?}", sign_up);
+    let signUpToken = sign_up["user-token"].to_string();
+    println!("{}", signUpToken);
+
+    thread::sleep(Duration::from_millis(1000));
+    println!("UAUT: {:?}", client.authorize(signUpToken)?);
     // NOTE: There's never a reason to call it with "none", but
     // it's still an option...
     // client.configuration("none".to_string())?;
-    let config = client.configuration("all".to_string())?;
-    println!("UCFG: {:?}", config);
-    println!("INFO: {:?}", client.info()?);
-    println!("FCRG: {:?}", client.face_recognition_params()?);
+    //let config = client.configuration("all".to_string())?;
+    //println!("UCFG: {:?}", config);
+    //println!("INFO: {:?}", client.info()?);
+    //println!("FCRG: {:?}", client.face_recognition_params()?);
 
-    client.open_door(&config["vip"])?;
+    //client.open_door(&config["vip"])?;
     client.shutdown();
 
     Ok(())

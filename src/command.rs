@@ -6,6 +6,8 @@ const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
 pub enum CommandKind {
     UAUT(String),
     UCFG(String),
+    RemoveAllUsers(String),
+    ActivateUser(String),
     INFO,
     FRCG
 }
@@ -28,6 +30,25 @@ struct UCFG {
     message_type: String,
     message_id: u8,
     addressbooks: String
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct RemoveAllUsers {
+    requester: String,
+    message: String,
+    message_type: String,
+    message_id: u8
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct ActivateUser {
+    email: String,
+    description: String,
+    message: String,
+    message_type: String,
+    message_id: u8
 }
 
 #[derive(Serialize, Deserialize)]
@@ -86,6 +107,31 @@ impl Command {
                 };
 
                 let json = serde_json::to_string(&frcg).unwrap();
+                Command::make(&json.as_bytes(), control)
+            },
+
+            CommandKind::RemoveAllUsers(requester) => {
+                let fact = RemoveAllUsers {
+                    requester: requester,
+                    message: String::from("remove-all-users"),
+                    message_type: message_type,
+                    message_id: 1
+                };
+
+                let json = serde_json::to_string(&fact).unwrap();
+                Command::make(&json.as_bytes(), control)
+            },
+
+            CommandKind::ActivateUser(email) => {
+                let fact = ActivateUser {
+                    email: email,
+                    description: String::from("viper-client"),
+                    message: String::from("activate-user"),
+                    message_type: message_type,
+                    message_id: 1
+                };
+
+                let json = serde_json::to_string(&fact).unwrap();
                 Command::make(&json.as_bytes(), control)
             }
         }
