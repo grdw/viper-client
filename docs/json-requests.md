@@ -69,7 +69,7 @@ There are two types of messages which can be executed on the fast activation cha
 
 ```json
 {
-  "message": "remove-all-users",
+  "message": "activate-user",
   "message-type": "request",
   "message-id": 0,
   "email": "test@test.com",
