@@ -6,6 +6,8 @@ const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
 pub enum CommandKind {
     UAUT(String),
     UCFG(String),
+    RemoveAllUsers(String),
+    ActivateUser(String),
     INFO,
     FRCG
 }
@@ -32,6 +34,25 @@ struct UCFG {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+struct RemoveAllUsers {
+    requester: String,
+    message: String,
+    message_type: String,
+    message_id: u8
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct ActivateUser {
+    email: String,
+    description: String,
+    message: String,
+    message_type: String,
+    message_id: u8
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 struct Blank {
     message: String,
     message_type: String,
@@ -42,7 +63,7 @@ impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
         let message_type = String::from("request");
 
-        match kind {
+        let json = match kind {
             CommandKind::UAUT(token) => {
                 let uaut = UAUT {
                     message: String::from("access"),
@@ -51,8 +72,7 @@ impl Command {
                     user_token: token
                 };
 
-                let json = serde_json::to_string(&uaut).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&uaut).unwrap()
             },
 
             CommandKind::UCFG(addressbooks) => {
@@ -63,8 +83,7 @@ impl Command {
                     addressbooks: addressbooks
                 };
 
-                let json = serde_json::to_string(&ucfg).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&ucfg).unwrap()
             },
 
             CommandKind::INFO => {
@@ -74,8 +93,7 @@ impl Command {
                     message_id: 1
                 };
 
-                let json = serde_json::to_string(&info).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&info).unwrap()
             },
 
             CommandKind::FRCG => {
@@ -85,10 +103,34 @@ impl Command {
                     message_id: 121
                 };
 
-                let json = serde_json::to_string(&frcg).unwrap();
-                Command::make(&json.as_bytes(), control)
+                serde_json::to_string(&frcg).unwrap()
+            },
+
+            CommandKind::RemoveAllUsers(requester) => {
+                let fact = RemoveAllUsers {
+                    requester: requester,
+                    message: String::from("remove-all-users"),
+                    message_type: message_type,
+                    message_id: 1
+                };
+
+                serde_json::to_string(&fact).unwrap()
+            },
+
+            CommandKind::ActivateUser(email) => {
+                let fact = ActivateUser {
+                    email: email,
+                    description: String::from("viper-client"),
+                    message: String::from("activate-user"),
+                    message_type: message_type,
+                    message_id: 1
+                };
+
+                serde_json::to_string(&fact).unwrap()
             }
-        }
+        };
+
+        Command::make(&json.as_bytes(), control)
     }
 
     pub fn buffer_length(b2: u8, b3: u8) -> usize {

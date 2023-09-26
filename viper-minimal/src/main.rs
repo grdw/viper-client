@@ -7,9 +7,9 @@ use viper_client::device::Device;
 fn main() -> Result<(), ViperError> {
     dotenv().ok();
 
+    let token = env::var("TOKEN").unwrap();
     let doorbell_ip = env::var("DOORBELL_IP").unwrap();
     let doorbell_port = env::var("DOORBELL_PORT").unwrap();
-    let token = env::var("TOKEN").unwrap();
 
     let mut prev = false;
     loop {
@@ -35,17 +35,11 @@ fn on_connect(doorbell_ip: &String,
               token: &String) -> Result<(), ViperError> {
 
     let mut client = ViperClient::new(doorbell_ip, doorbell_port);
-
-    println!("UAUT: {:?}", client.authorize(token.to_string())?);
-    // NOTE: There's never a reason to call it with "none", but
-    // it's still an option...
-    // client.configuration("none".to_string())?;
-    let config = client.configuration("all".to_string())?;
-    println!("UCFG: {:?}", config);
+    println!("UAUT: {:?}", client.authorize(String::from(token))?);
+    println!("UCFG: {:?}", client.configuration("none".to_string())?);
     println!("INFO: {:?}", client.info()?);
     println!("FCRG: {:?}", client.face_recognition_params()?);
 
-    client.open_door(&config["vip"])?;
     client.shutdown();
 
     Ok(())

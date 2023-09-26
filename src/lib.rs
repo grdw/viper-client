@@ -55,6 +55,28 @@ impl ViperClient {
         }
     }
 
+    pub fn sign_up(&mut self, email: &String) -> JSONResult {
+        let fact_channel = self.channel("FACT");
+        self.stream.execute(&fact_channel.open())?;
+        let activate_user = CommandKind::ActivateUser(String::from(email));
+        let act_bytes = self.stream.execute(&fact_channel.com(activate_user))?;
+        let json_response = Self::json(&act_bytes);
+
+        self.stream.execute(&fact_channel.close())?;
+        json_response
+    }
+
+    pub fn remove_all_users(&mut self, email: &String) -> JSONResult {
+        let fact_channel = self.channel("FACT");
+        self.stream.execute(&fact_channel.open())?;
+        let remove_all_users = CommandKind::RemoveAllUsers(String::from(email));
+        let rem_bytes = self.stream.execute(&fact_channel.com(remove_all_users))?;
+        self.stream.execute(&fact_channel.close())?;
+
+        let json_response = Self::json(&rem_bytes);
+        json_response
+    }
+
     pub fn authorize(&mut self, token: String) -> JSONResult {
         let uaut = CommandKind::UAUT(token);
         let uaut_channel = self.channel("UAUT");
