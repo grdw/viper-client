@@ -43,38 +43,34 @@ impl CommandRequest {
 
     pub fn authorize(user_token: String) -> Authorize {
         return Authorize {
-            base: Self::default("access"),
+            base: Base::request("access"),
             user_token
         }
     }
 
     pub fn configuration(addressbooks: String) -> Configuration {
         return Configuration {
-            base: Self::default("get-configuration"),
+            base: Base::request("get-configuration"),
             addressbooks
         }
     }
 
     pub fn remove_all_users(requester: String) -> RemoveAllUsers {
         return RemoveAllUsers {
-            base: Self::default("remove-all-users"),
+            base: Base::request("remove-all-users"),
             requester,
         }
     }
 
     pub fn activate_user(email: String) -> ActivateUser {
         return ActivateUser {
-            base: Self::default("activate-user"),
+            base: Base::request("activate-user"),
             description: String::from("viper-client"),
             email,
         }
     }
 
     pub fn default(message: &'static str) -> Base {
-        return Base {
-            message: String::from(message),
-            message_type: String::from("request"),
-            message_id: 1
-        }
+        return Base::request(message)
     }
 }

@@ -196,6 +196,7 @@ mod tests {
     use super::*;
     use std::thread;
     use crate::command::Command;
+    use crate::command::command_response::CommandResponse;
     use crate::test_helper::SimpleTcpListener;
 
     #[test]
@@ -221,18 +222,9 @@ mod tests {
         );
 
         thread::spawn(move || {
-            let mocked_open = [
-                0xcd, 0xab, 0x02, 0x00, 0x04, 0x00, 0x00, 0x00,
-                0x1a, 0x12, 0x00, 0x00
-            ];
-
-            let mocked_json = r#"{
-                "message":"access",
-                "message-type":"response",
-                "message-id":5,
-                "response-code":200,
-                "response-string":"Access Granted"
-            }"#;
+            let mocked_open = command::OPEN;
+            let mocked_response = CommandResponse::authorize(200, "Access Granted");
+            let mocked_json = serde_json::to_string(&mocked_response).unwrap();
 
             listener.mock_server(
                 vec![

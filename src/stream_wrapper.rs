@@ -25,7 +25,7 @@ impl StreamWrapper {
             .set_write_timeout(Some(Duration::from_millis(TIMEOUT)))
             .unwrap();
 
-        StreamWrapper { stream: stream }
+        StreamWrapper { stream }
     }
 
     pub fn execute(&mut self, b: &[u8]) -> ByteResult {
@@ -109,7 +109,6 @@ mod tests {
             CommandKind::UAUT("ABCDEFG".to_string()),
             &[0, 0]
         );
-        println!("{:?}", String::from_utf8(aut.clone()));
         let r = client.execute(&aut).unwrap();
         assert_eq!(r.len(), 83);
     }
