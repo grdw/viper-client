@@ -37,6 +37,10 @@ pub struct ActivateUser {
 pub struct CommandRequest {}
 
 impl CommandRequest {
+    pub fn to_json<T: Serialize>(cmd: T) -> String {
+        return serde_json::to_string(&cmd).unwrap()
+    }
+
     pub fn authorize(user_token: String) -> Authorize {
         return Authorize {
             base: Self::default("access"),

@@ -1,6 +1,8 @@
 mod base;
 mod command_request;
 
+use command_request::CommandRequest;
+
 const OPEN:  [u8; 8] = [0xcd, 0xab, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00];
 const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
 
@@ -18,41 +20,24 @@ pub struct Command { }
 impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
         let json = match kind {
-            CommandKind::UAUT(token) => {
-                let uaut = command_request::CommandRequest::authorize(token);
-
-                serde_json::to_string(&uaut).unwrap()
-            },
-
-            CommandKind::UCFG(addressbooks) => {
-                let ucfg = command_request::CommandRequest::configuration(addressbooks);
-
-                serde_json::to_string(&ucfg).unwrap()
-            },
-
-            CommandKind::INFO => {
-                let info = command_request::CommandRequest::default("server-info");
-
-                serde_json::to_string(&info).unwrap()
-            },
-
-            CommandKind::FRCG => {
-                let frcg = command_request::CommandRequest::default("rcg-get-params");
-
-                serde_json::to_string(&frcg).unwrap()
-            },
-
-            CommandKind::RemoveAllUsers(requester) => {
-                let fact = command_request::CommandRequest::remove_all_users(requester);
-
-                serde_json::to_string(&fact).unwrap()
-            },
-
-            CommandKind::ActivateUser(email) => {
-                let fact = command_request::CommandRequest::activate_user(email);
-
-                serde_json::to_string(&fact).unwrap()
-            }
+            CommandKind::UAUT(token) => CommandRequest::to_json(
+                CommandRequest::authorize(token)
+            ),
+            CommandKind::UCFG(addressbooks) => CommandRequest::to_json(
+                CommandRequest::configuration(addressbooks)
+            ),
+            CommandKind::INFO => CommandRequest::to_json(
+                CommandRequest::default("server-info")
+            ),
+            CommandKind::FRCG => CommandRequest::to_json(
+                CommandRequest::default("rcg-get-params")
+            ),
+            CommandKind::RemoveAllUsers(requester) => CommandRequest::to_json(
+                CommandRequest::remove_all_users(requester)
+            ),
+            CommandKind::ActivateUser(email) => CommandRequest::to_json(
+                CommandRequest::activate_user(email)
+            ),
         };
 
         Command::make(&json.as_bytes(), control)
