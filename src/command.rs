@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+mod base;
+mod command_request;
 
 const OPEN:  [u8; 8] = [0xcd, 0xab, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00];
 const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
@@ -14,117 +15,41 @@ pub enum CommandKind {
 
 pub struct Command { }
 
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct UAUT {
-    message: String,
-    message_type: String,
-    message_id: u8,
-    user_token: String,
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct UCFG {
-    message: String,
-    message_type: String,
-    message_id: u8,
-    addressbooks: String
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct RemoveAllUsers {
-    requester: String,
-    message: String,
-    message_type: String,
-    message_id: u8
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct ActivateUser {
-    email: String,
-    description: String,
-    message: String,
-    message_type: String,
-    message_id: u8
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct Blank {
-    message: String,
-    message_type: String,
-    message_id: u8
-}
-
 impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
-        let message_type = String::from("request");
-
         let json = match kind {
             CommandKind::UAUT(token) => {
-                let uaut = UAUT {
-                    message: String::from("access"),
-                    message_type: message_type,
-                    message_id: 1,
-                    user_token: token
-                };
+                let uaut = command_request::CommandRequest::authorize(token);
 
                 serde_json::to_string(&uaut).unwrap()
             },
 
             CommandKind::UCFG(addressbooks) => {
-                let ucfg = UCFG {
-                    message: String::from("get-configuration"),
-                    message_type: message_type,
-                    message_id: 2,
-                    addressbooks: addressbooks
-                };
+                let ucfg = command_request::CommandRequest::configuration(addressbooks);
 
                 serde_json::to_string(&ucfg).unwrap()
             },
 
             CommandKind::INFO => {
-                let info = Blank {
-                    message: String::from("server-info"),
-                    message_type: message_type,
-                    message_id: 1
-                };
+                let info = command_request::CommandRequest::default("server-info");
 
                 serde_json::to_string(&info).unwrap()
             },
 
             CommandKind::FRCG => {
-                let frcg = Blank {
-                    message: String::from("rcg-get-params"),
-                    message_type: message_type,
-                    message_id: 121
-                };
+                let frcg = command_request::CommandRequest::default("rcg-get-params");
 
                 serde_json::to_string(&frcg).unwrap()
             },
 
             CommandKind::RemoveAllUsers(requester) => {
-                let fact = RemoveAllUsers {
-                    requester: requester,
-                    message: String::from("remove-all-users"),
-                    message_type: message_type,
-                    message_id: 1
-                };
+                let fact = command_request::CommandRequest::remove_all_users(requester);
 
                 serde_json::to_string(&fact).unwrap()
             },
 
             CommandKind::ActivateUser(email) => {
-                let fact = ActivateUser {
-                    email: email,
-                    description: String::from("viper-client"),
-                    message: String::from("activate-user"),
-                    message_type: message_type,
-                    message_id: 1
-                };
+                let fact = command_request::CommandRequest::activate_user(email);
 
                 serde_json::to_string(&fact).unwrap()
             }
