@@ -54,7 +54,7 @@ impl StreamWrapper {
         );
 
         let mut buf = vec![0; buffer_size];
-        self.stream.read(&mut buf)?;
+        self.stream.read_exact(&mut buf)?;
         Ok(buf)
     }
 }

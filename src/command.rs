@@ -16,47 +16,43 @@ pub struct Command { }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct UAUT {
+struct Base {
     message: String,
     message_type: String,
-    message_id: u8,
+    message_id: u8
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct UAUT {
+    #[serde(flatten)]
+    base: Base,
     user_token: String,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct UCFG {
-    message: String,
-    message_type: String,
-    message_id: u8,
+    #[serde(flatten)]
+    base: Base,
     addressbooks: String
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct RemoveAllUsers {
+    #[serde(flatten)]
+    base: Base,
     requester: String,
-    message: String,
-    message_type: String,
-    message_id: u8
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct ActivateUser {
+    #[serde(flatten)]
+    base: Base,
     email: String,
     description: String,
-    message: String,
-    message_type: String,
-    message_id: u8
-}
-
-#[derive(Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-struct Blank {
-    message: String,
-    message_type: String,
-    message_id: u8
 }
 
 impl Command {
@@ -66,9 +62,11 @@ impl Command {
         let json = match kind {
             CommandKind::UAUT(token) => {
                 let uaut = UAUT {
-                    message: String::from("access"),
-                    message_type: message_type,
-                    message_id: 1,
+                    base: Base {
+                        message: String::from("access"),
+                        message_id: 1,
+                        message_type,
+                    },
                     user_token: token
                 };
 
@@ -77,30 +75,32 @@ impl Command {
 
             CommandKind::UCFG(addressbooks) => {
                 let ucfg = UCFG {
-                    message: String::from("get-configuration"),
-                    message_type: message_type,
-                    message_id: 2,
-                    addressbooks: addressbooks
+                    base: Base {
+                        message: String::from("get-configuration"),
+                        message_id: 2,
+                        message_type,
+                    },
+                    addressbooks
                 };
 
                 serde_json::to_string(&ucfg).unwrap()
             },
 
             CommandKind::INFO => {
-                let info = Blank {
+                let info = Base {
                     message: String::from("server-info"),
-                    message_type: message_type,
-                    message_id: 1
+                    message_id: 1,
+                    message_type
                 };
 
                 serde_json::to_string(&info).unwrap()
             },
 
             CommandKind::FRCG => {
-                let frcg = Blank {
+                let frcg = Base {
                     message: String::from("rcg-get-params"),
-                    message_type: message_type,
-                    message_id: 121
+                    message_id: 121,
+                    message_type
                 };
 
                 serde_json::to_string(&frcg).unwrap()
@@ -108,10 +108,12 @@ impl Command {
 
             CommandKind::RemoveAllUsers(requester) => {
                 let fact = RemoveAllUsers {
-                    requester: requester,
-                    message: String::from("remove-all-users"),
-                    message_type: message_type,
-                    message_id: 1
+                    base: Base {
+                        message: String::from("remove-all-users"),
+                        message_id: 1,
+                        message_type
+                    },
+                    requester
                 };
 
                 serde_json::to_string(&fact).unwrap()
@@ -119,11 +121,13 @@ impl Command {
 
             CommandKind::ActivateUser(email) => {
                 let fact = ActivateUser {
-                    email: email,
+                    email,
                     description: String::from("viper-client"),
-                    message: String::from("activate-user"),
-                    message_type: message_type,
-                    message_id: 1
+                    base: Base {
+                        message: String::from("activate-user"),
+                        message_id: 1,
+                        message_type
+                    }
                 };
 
                 serde_json::to_string(&fact).unwrap()
