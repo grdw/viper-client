@@ -4,18 +4,21 @@ mod helper;
 mod stream_wrapper;
 pub mod device;
 pub mod command;
+pub mod command_response;
 
 #[cfg(test)]
 mod test_helper;
 
+use serde::Deserialize;
 use stream_wrapper::StreamWrapper;
 use channel::Channel;
 use command::CommandKind;
+use command_response::{ActivateUserResponse, ConfigurationResponse, InfoResponse};
 use ctpp_channel::CTPPChannel;
 use helper::Helper;
 use std::{io, fmt, fmt::Display, str};
 
-type JSONResult = Result<serde_json::Value, ViperError>;
+type JSONResult<T> = Result<T, ViperError>;
 
 pub struct ViperClient {
     stream: StreamWrapper,
@@ -55,7 +58,7 @@ impl ViperClient {
         }
     }
 
-    pub fn sign_up(&mut self, email: &String) -> JSONResult {
+    pub fn sign_up(&mut self, email: &String) -> JSONResult<ActivateUserResponse> {
         let fact_channel = self.channel("FACT");
         self.stream.execute(&fact_channel.open())?;
         let activate_user = CommandKind::ActivateUser(String::from(email));
@@ -66,7 +69,7 @@ impl ViperClient {
         json_response
     }
 
-    pub fn remove_all_users(&mut self, email: &String) -> JSONResult {
+    pub fn remove_all_users(&mut self, email: &String) -> JSONResult<serde_json::Value> {
         let fact_channel = self.channel("FACT");
         self.stream.execute(&fact_channel.open())?;
         let remove_all_users = CommandKind::RemoveAllUsers(String::from(email));
@@ -77,7 +80,7 @@ impl ViperClient {
         json_response
     }
 
-    pub fn authorize(&mut self, token: String) -> JSONResult {
+    pub fn authorize(&mut self, token: String) -> JSONResult<serde_json::Value> {
         let uaut = CommandKind::UAUT(token);
         let uaut_channel = self.channel("UAUT");
         self.stream.execute(&uaut_channel.open())?;
@@ -88,7 +91,7 @@ impl ViperClient {
         json_response
     }
 
-    pub fn configuration(&mut self, addressbooks: String) -> JSONResult {
+    pub fn configuration(&mut self, addressbooks: String) -> JSONResult<ConfigurationResponse> {
         let ucfg = CommandKind::UCFG(addressbooks);
         let ucfg_channel = self.channel("UCFG");
         self.stream.execute(&ucfg_channel.open())?;
@@ -99,7 +102,7 @@ impl ViperClient {
         json_response
     }
 
-    pub fn info(&mut self) -> JSONResult {
+    pub fn info(&mut self) -> JSONResult<InfoResponse> {
         let info = CommandKind::INFO;
         let info_channel = self.channel("INFO");
         self.stream.execute(&info_channel.open())?;
@@ -107,11 +110,10 @@ impl ViperClient {
         let info_bytes = self.stream.execute(&info_channel.com(info))?;
         let json_response = Self::json(&info_bytes);
         self.stream.execute(&info_channel.close())?;
-
         json_response
     }
 
-    pub fn face_recognition_params(&mut self) -> JSONResult {
+    pub fn face_recognition_params(&mut self) -> JSONResult<serde_json::Value> {
         let frcg = CommandKind::FRCG;
         let frcg_channel = self.channel("FRCG");
         self.stream.execute(&frcg_channel.open())?;
@@ -172,10 +174,8 @@ impl ViperClient {
         CTPPChannel::new(&self.control)
     }
 
-    fn json(bytes: &[u8]) -> JSONResult {
-        let json_str =  str::from_utf8(&bytes).unwrap();
-
-        match serde_json::from_str(json_str) {
+    fn json<'a, T: Deserialize<'a>>(bytes: &'a [u8]) -> JSONResult<T> {
+        match serde_json::from_slice(bytes) {
             Ok(json) => Ok(json),
             Err(e) => Err(ViperError::JSONError(e))
         }

@@ -25,3 +25,14 @@ impl Channel {
         Command::for_kind(kind, &self.control)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_channel_open() {
+        let channel = Channel::new(&[0, 0], "INFO");
+        channel.open();
+    }
+}
