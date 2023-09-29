@@ -25,7 +25,7 @@ impl StreamWrapper {
             .set_write_timeout(Some(Duration::from_millis(TIMEOUT)))
             .unwrap();
 
-        StreamWrapper { stream: stream }
+        StreamWrapper { stream }
     }
 
     pub fn execute(&mut self, b: &[u8]) -> ByteResult {
@@ -54,7 +54,7 @@ impl StreamWrapper {
         );
 
         let mut buf = vec![0; buffer_size];
-        self.stream.read(&mut buf)?;
+        self.stream.read_exact(&mut buf)?;
         Ok(buf)
     }
 }
