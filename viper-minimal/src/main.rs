@@ -35,10 +35,10 @@ fn on_connect(doorbell_ip: &String,
               token: &String) -> Result<(), ViperError> {
 
     let mut client = ViperClient::new(doorbell_ip, doorbell_port);
-    println!("INFO: {:?}", client.info()?);
-    println!("UAUT: {:?}", client.authorize(String::from(token))?);
-    println!("UCFG: {:?}", client.configuration("all".to_string())?);
-    println!("FCRG: {:?}", client.face_recognition_params()?);
+    println!("INFO: {:?}\n", client.info()?);
+    println!("UAUT: {:?}\n", client.authorize(String::from(token))?);
+    println!("UCFG: {:?}\n", client.configuration("all".to_string())?);
+    println!("FCRG: {:?}\n", client.face_recognition_params()?);
 
     client.shutdown();
 

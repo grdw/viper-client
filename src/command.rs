@@ -1,4 +1,4 @@
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 const OPEN:  [u8; 8] = [0xcd, 0xab, 0x01, 0x00, 0x07, 0x00, 0x00, 0x00];
 const CLOSE: [u8; 8] = [0xef, 0x01, 0x03, 0x00, 0x02, 0x00, 0x00, 0x00];
@@ -14,7 +14,7 @@ pub enum CommandKind {
 
 pub struct Command { }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct Base {
     message: String,
@@ -32,7 +32,7 @@ impl Base {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct UAUT {
     #[serde(flatten)]
@@ -40,7 +40,7 @@ struct UAUT {
     user_token: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct UCFG {
     #[serde(flatten)]
@@ -48,7 +48,7 @@ struct UCFG {
     addressbooks: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct RemoveAllUsers {
     #[serde(flatten)]
@@ -56,7 +56,7 @@ struct RemoveAllUsers {
     requester: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 #[serde(rename_all = "kebab-case")]
 struct ActivateUser {
     #[serde(flatten)]
