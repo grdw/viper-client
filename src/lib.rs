@@ -13,7 +13,12 @@ use serde::Deserialize;
 use stream_wrapper::StreamWrapper;
 use channel::Channel;
 use command::CommandKind;
-use command_response::{ActivateUserResponse, BaseResponse, ConfigurationResponse, InfoResponse};
+use command_response::{
+    ActivateUserResponse,
+    AuthResponse,
+    ConfigurationResponse,
+    InfoResponse
+};
 use ctpp_channel::CTPPChannel;
 use helper::Helper;
 use std::{io, fmt, fmt::Display, str};
@@ -80,7 +85,7 @@ impl ViperClient {
         json_response
     }
 
-    pub fn authorize(&mut self, token: String) -> JSONResult<BaseResponse> {
+    pub fn authorize(&mut self, token: String) -> JSONResult<AuthResponse> {
         let uaut = CommandKind::UAUT(token);
         let uaut_channel = self.channel("UAUT");
         self.stream.execute(&uaut_channel.open())?;

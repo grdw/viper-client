@@ -5,12 +5,20 @@ use serde_json::Value;
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-pub struct BaseResponse {
+struct BaseResponse {
     message: String,
     message_type: String,
     message_id: u8,
     response_code: u8,
     response_string: String,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct AuthResponse {
+    #[serde(flatten)]
+    response: BaseResponse
 }
 
 #[allow(dead_code)]
@@ -26,7 +34,7 @@ pub struct InfoResponse {
     channel_details: HashMap<String, Value>,
 
     #[serde(flatten)]
-    base: BaseResponse
+    response: BaseResponse
 }
 
 #[allow(dead_code)]
@@ -36,7 +44,7 @@ pub struct ActivateUserResponse {
     user_token: String,
 
      #[serde(flatten)]
-    base: BaseResponse
+    response: BaseResponse
 }
 
 #[allow(dead_code)]
@@ -83,9 +91,10 @@ pub struct VipResponse {
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ConfigurationResponse {
-    #[serde(flatten)]
-    base: BaseResponse,
     viper_server: ViperServerResponse,
     viper_client: ViperClientResponse,
     vip: VipResponse,
+
+    #[serde(flatten)]
+    response: BaseResponse
 }
