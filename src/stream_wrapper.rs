@@ -25,7 +25,7 @@ impl StreamWrapper {
             .set_write_timeout(Some(Duration::from_millis(TIMEOUT)))
             .unwrap();
 
-        StreamWrapper { stream }
+        StreamWrapper { stream: stream }
     }
 
     pub fn execute(&mut self, b: &[u8]) -> ByteResult {
