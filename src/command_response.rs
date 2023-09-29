@@ -1,9 +1,11 @@
+use std::collections::HashMap;
 use serde::Deserialize;
+use serde_json::Value;
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-struct BaseResponse {
+pub struct BaseResponse {
     message: String,
     message_type: String,
     message_id: u8,
@@ -12,28 +14,33 @@ struct BaseResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct InfoResponse {
-    #[serde(flatten)]
-    base: BaseResponse,
     model: String,
     version: String,
     serial_code: String,
-    capabilities: Vec<String>
+    capabilities: Vec<String>,
+
+    #[serde(flatten)]
+    channel_details: HashMap<String, Value>,
+
+    #[serde(flatten)]
+    base: BaseResponse
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ActivateUserResponse {
-    #[serde(flatten)]
-    base: BaseResponse,
-    user_token: String
+    user_token: String,
+
+     #[serde(flatten)]
+    base: BaseResponse
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperServerResponse {
     local_address: String,
@@ -45,14 +52,14 @@ pub struct ViperServerResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperClientResponse {
     description: String
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct AptConfigResponse {
     description: String,
@@ -62,18 +69,18 @@ pub struct AptConfigResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct VipResponse {
     enabled: bool,
     apt_address: String,
-    apt_subaddress: String,
-    logical_subaddress: String,
+    apt_subaddress: u16,
+    logical_subaddress: u16,
     apt_config: AptConfigResponse
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ConfigurationResponse {
     #[serde(flatten)]
