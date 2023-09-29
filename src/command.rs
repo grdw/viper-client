@@ -22,6 +22,16 @@ struct Base {
     message_id: u8
 }
 
+impl Base {
+    pub fn request(message: &'static str, message_id: u8) -> Base {
+        return Base {
+            message: String::from(message),
+            message_type: String::from("request"),
+            message_id
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct UAUT {
@@ -57,16 +67,10 @@ struct ActivateUser {
 
 impl Command {
     pub fn for_kind(kind: CommandKind, control: &[u8]) -> Vec<u8> {
-        let message_type = String::from("request");
-
         let json = match kind {
             CommandKind::UAUT(token) => {
                 let uaut = UAUT {
-                    base: Base {
-                        message: String::from("access"),
-                        message_id: 1,
-                        message_type,
-                    },
+                    base: Base::request("access", 1),
                     user_token: token
                 };
 
@@ -75,11 +79,7 @@ impl Command {
 
             CommandKind::UCFG(addressbooks) => {
                 let ucfg = UCFG {
-                    base: Base {
-                        message: String::from("get-configuration"),
-                        message_id: 2,
-                        message_type,
-                    },
+                    base: Base::request("get-configuration", 2),
                     addressbooks
                 };
 
@@ -87,32 +87,20 @@ impl Command {
             },
 
             CommandKind::INFO => {
-                let info = Base {
-                    message: String::from("server-info"),
-                    message_id: 1,
-                    message_type
-                };
+                let info = Base::request("server-info", 1);
 
                 serde_json::to_string(&info).unwrap()
             },
 
             CommandKind::FRCG => {
-                let frcg = Base {
-                    message: String::from("rcg-get-params"),
-                    message_id: 121,
-                    message_type
-                };
+                let frcg = Base::request("rcg-get-params", 121);
 
                 serde_json::to_string(&frcg).unwrap()
             },
 
             CommandKind::RemoveAllUsers(requester) => {
                 let fact = RemoveAllUsers {
-                    base: Base {
-                        message: String::from("remove-all-users"),
-                        message_id: 1,
-                        message_type
-                    },
+                    base: Base::request("remove-all-users", 1),
                     requester
                 };
 
@@ -123,11 +111,7 @@ impl Command {
                 let fact = ActivateUser {
                     email,
                     description: String::from("viper-client"),
-                    base: Base {
-                        message: String::from("activate-user"),
-                        message_id: 1,
-                        message_type
-                    }
+                    base: Base::request("activate-user", 1)
                 };
 
                 serde_json::to_string(&fact).unwrap()
