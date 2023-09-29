@@ -17,7 +17,8 @@ use command_response::{
     ActivateUserResponse,
     AuthResponse,
     ConfigurationResponse,
-    InfoResponse
+    InfoResponse,
+    VipResponse
 };
 use ctpp_channel::CTPPChannel;
 use helper::Helper;
@@ -130,14 +131,10 @@ impl ViperClient {
     }
 
     // TODO: This function is not finished
-    pub fn open_door(&mut self, vip: &serde_json::Value) -> Result<(), std::io::Error> {
-        let addr = vip["apt-address"].to_string();
-        let sub = format!("{}{}", addr, vip["apt-subaddress"]);
-
-        let act = vip["user-parameters"]
-                     ["opendoor-address-book"]
-                     [0]
-                     ["apt-address"].to_string();
+    pub fn open_door(&mut self, vip: &VipResponse) -> Result<(), std::io::Error> {
+        let addr = vip.apt_address.to_string();
+        let sub = format!("{}{}", addr, vip.apt_subaddress);
+        let act = vip.user_parameters.opendoor_address_book[0].apt_address.to_string();
 
         let mut ctpp_channel = self.ctpp_channel();
         self.stream.execute(&ctpp_channel.open(&sub))?;

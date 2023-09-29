@@ -79,12 +79,80 @@ pub struct AptConfigResponse {
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
+pub struct Switchboard {
+    pub id: String,
+    pub name: String,
+    pub apt_address: String,
+    pub emergency_calls: bool
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct Entrance {
+    pub id: String,
+    pub name: String,
+    pub apt_address: String,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct Actuator {
+    pub id: String,
+    pub name: String,
+    pub apt_address: String,
+    pub module_index: u8,
+    pub output_index: u8
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct Opendoor {
+    pub id: String,
+    pub name: String,
+    pub apt_address: String,
+    pub output_index: u8,
+    pub secure_mode: bool
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct OpendoorAction {
+    pub id: String,
+    pub action: String,
+    pub apt_address: String,
+    pub output_index: u8
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct UserParametersResponse {
+    pub forced: bool,
+    pub apt_address_book: Vec<HashMap<String, Value>>,
+    pub camera_address_book: Vec<HashMap<String, Value>>,
+    pub rtsp_camera_address_book: Vec<HashMap<String, Value>>,
+    pub switchboard_address_book: Vec<Switchboard>,
+    pub entrance_address_book: Vec<Entrance>,
+    pub actuator_address_book: Vec<Actuator>,
+    pub opendoor_address_book: Vec<Opendoor>,
+    pub opendoor_actions: Vec<OpendoorAction>,
+    pub additional_actuator: Vec<Actuator>,
+}
+
+#[allow(dead_code)]
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "kebab-case")]
 pub struct VipResponse {
     pub enabled: bool,
     pub apt_address: String,
     pub apt_subaddress: u16,
     pub logical_subaddress: u16,
-    pub apt_config: AptConfigResponse
+    pub apt_config: AptConfigResponse,
+    pub user_parameters: UserParametersResponse
 }
 
 #[allow(dead_code)]
