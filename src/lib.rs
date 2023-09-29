@@ -249,7 +249,7 @@ mod tests {
         });
 
         let resp = client.authorize(String::from("TESTTOKEN")).unwrap();
-        assert_eq!(resp["response-string"], "Access Granted");
-        assert_eq!(resp["response-code"], 200)
+        assert_eq!(resp.response.response_string, "Access Granted");
+        assert_eq!(resp.response.response_code, 200)
     }
 }

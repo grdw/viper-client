@@ -5,12 +5,12 @@ use serde_json::Value;
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-struct BaseResponse {
-    message: String,
-    message_type: String,
-    message_id: u8,
-    response_code: u8,
-    response_string: String,
+pub struct BaseResponse {
+    pub message: String,
+    pub message_type: String,
+    pub message_id: u8,
+    pub response_code: u8,
+    pub response_string: String,
 }
 
 #[allow(dead_code)]
@@ -18,83 +18,83 @@ struct BaseResponse {
 #[serde(rename_all = "kebab-case")]
 pub struct AuthResponse {
     #[serde(flatten)]
-    response: BaseResponse
+    pub response: BaseResponse
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct InfoResponse {
-    model: String,
-    version: String,
-    serial_code: String,
-    capabilities: Vec<String>,
+    pub model: String,
+    pub version: String,
+    pub serial_code: String,
+    pub capabilities: Vec<String>,
 
     #[serde(flatten)]
-    channel_details: HashMap<String, Value>,
+    pub channel_details: HashMap<String, Value>,
 
     #[serde(flatten)]
-    response: BaseResponse
+    pub response: BaseResponse
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ActivateUserResponse {
-    user_token: String,
+    pub user_token: String,
 
      #[serde(flatten)]
-    response: BaseResponse
+    pub response: BaseResponse
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperServerResponse {
-    local_address: String,
-    local_tcp_port: u16,
-    local_udp_port: u16,
-    remote_address: String,
-    remote_tcp_port: u16,
-    remote_udp_port: u16
+    pub local_address: String,
+    pub local_tcp_port: u16,
+    pub local_udp_port: u16,
+    pub remote_address: String,
+    pub remote_tcp_port: u16,
+    pub remote_udp_port: u16
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperClientResponse {
-    description: String
+    pub description: String
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct AptConfigResponse {
-    description: String,
-    call_divert_busy_en: bool,
-    call_divert_address: String,
-    virtual_key_enabled: bool
+    pub description: String,
+    pub call_divert_busy_en: bool,
+    pub call_divert_address: String,
+    pub virtual_key_enabled: bool
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct VipResponse {
-    enabled: bool,
-    apt_address: String,
-    apt_subaddress: u16,
-    logical_subaddress: u16,
-    apt_config: AptConfigResponse
+    pub enabled: bool,
+    pub apt_address: String,
+    pub apt_subaddress: u16,
+    pub logical_subaddress: u16,
+    pub apt_config: AptConfigResponse
 }
 
 #[allow(dead_code)]
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ConfigurationResponse {
-    viper_server: ViperServerResponse,
-    viper_client: ViperClientResponse,
-    vip: VipResponse,
+    pub viper_server: ViperServerResponse,
+    pub viper_client: ViperClientResponse,
+    pub vip: VipResponse,
 
     #[serde(flatten)]
-    response: BaseResponse
+    pub response: BaseResponse
 }
