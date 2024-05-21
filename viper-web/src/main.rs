@@ -131,13 +131,8 @@ async fn open_door(
     let auth_json = client.authorize(config.token.to_string())?;
 
     if auth_json.response.response_code == 200 {
-        //let vip_response = VipResponse{
-        //    enabled: false,
-        //    apt_address: "SB000006",
-        //    user_parameters: UserParametersResponse{
-
-        //    }
-        //}
+        // TODO: Implement the open door action once it's finished
+        //let vip_response = VipResponse{}
 
         //client.open_door(&vip_response)?;
         client.shutdown();
