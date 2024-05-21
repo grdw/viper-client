@@ -1,9 +1,9 @@
 use std::collections::HashMap;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct BaseResponse {
     pub message: String,
@@ -48,7 +48,7 @@ pub struct ActivateUserResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperServerResponse {
     pub local_address: String,
@@ -60,14 +60,14 @@ pub struct ViperServerResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ViperClientResponse {
     pub description: String
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct AptConfigResponse {
     pub description: String,
@@ -77,7 +77,7 @@ pub struct AptConfigResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Switchboard {
     pub id: String,
@@ -87,7 +87,7 @@ pub struct Switchboard {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Entrance {
     pub id: String,
@@ -96,7 +96,7 @@ pub struct Entrance {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Actuator {
     pub id: String,
@@ -107,7 +107,7 @@ pub struct Actuator {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Opendoor {
     pub id: String,
@@ -118,7 +118,7 @@ pub struct Opendoor {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct OpendoorAction {
     pub id: String,
@@ -128,7 +128,7 @@ pub struct OpendoorAction {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct UserParametersResponse {
     pub forced: bool,
@@ -144,7 +144,7 @@ pub struct UserParametersResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct VipResponse {
     pub enabled: bool,
@@ -156,7 +156,7 @@ pub struct VipResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ConfigurationResponse {
     pub viper_server: ViperServerResponse,

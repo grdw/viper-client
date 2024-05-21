@@ -111,10 +111,10 @@ async fn list_doors(
     let mut client = ViperClient::new(&config.ip, &config.port);
     let auth_json = client.authorize(config.token.to_string())?;
 
-    if auth_json["response-code"] == 200 {
+    if auth_json.response.response_code == 200 {
         let config = client.configuration("all".to_string())?;
         client.shutdown();
-        Ok(web::Json(config["vip"].clone()))
+        Ok(web::Json(config))
     } else {
         println!("{:?}", auth_json);
         Err(ViperHTTPError::Unauthorized)
@@ -130,20 +130,16 @@ async fn open_door(
     let mut client = ViperClient::new(&config.ip, &config.port);
     let auth_json = client.authorize(config.token.to_string())?;
 
-    if auth_json["response-code"] == 200 {
-        let thingy = json!({
-            "apt-address": "SB000006",
-            "apt-subaddress": 2,
-            "user-paramaters": {
-                "opendoor-address-book": [
-                    {
-                        "apt-address": "SB1000001"
-                    }
-                ]
-            }
-        });
+    if auth_json.response.response_code == 200 {
+        //let vip_response = VipResponse{
+        //    enabled: false,
+        //    apt_address: "SB000006",
+        //    user_parameters: UserParametersResponse{
 
-        client.open_door(&thingy)?;
+        //    }
+        //}
+
+        //client.open_door(&vip_response)?;
         client.shutdown();
 
         Ok(web::Json(DoorOpenRequest { success: true, error: vec![] }))
