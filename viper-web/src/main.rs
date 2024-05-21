@@ -14,7 +14,6 @@ use actix_web::{
 use derive_more::{Display, Error};
 use dotenv::dotenv;
 use serde::Serialize;
-use serde_json::json;
 use std::{io, env};
 use viper_client::{ViperClient, ViperError};
 use viper_client::device::Device;
