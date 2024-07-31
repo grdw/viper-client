@@ -1,3 +1,5 @@
+# This project is no longer maintained. Please fork it if you want to work on it. The reason is that in the near future I won't be having access to my intercom any more. 
+
 # Viper Client 👷 (WIP) [![CircleCI](https://dl.circleci.com/status-badge/img/gh/grdw/viper-client/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/grdw/viper-client/tree/main)
 This is code for my intercom; specifically for the Comelit Mini Wi-Fi MSFV. This features a ViperClient which can talk to the Comelit Mini Wi-fi MSFV directly; so without intermediary Cloud devices.
 
