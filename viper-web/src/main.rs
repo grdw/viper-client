@@ -8,12 +8,14 @@ use actix_web::{
     error,
     get,
     http::{header::ContentType, StatusCode},
+    middleware::Logger,
     post,
     web,
 };
 use derive_more::{Display, Error};
 use dotenv::dotenv;
-use serde::Serialize;
+use env_logger::Env;
+use serde::{Deserialize, Serialize};
 use std::{io, env};
 use viper_client::{ViperClient, ViperError};
 use viper_client::device::Device;
@@ -27,7 +29,7 @@ enum ViperHTTPError {
     NotJSONError,
 
     #[display(fmt = "unautorized")]
-    Unauthorized
+    Unauthorized,
 }
 
 impl From<ViperError> for ViperHTTPError {
@@ -68,6 +70,11 @@ impl error::ResponseError for ViperHTTPError {
 struct Config {
     ip: String,
     port: String,
+    email: String
+}
+
+#[derive(Serialize, Deserialize)]
+struct FactResponse{
     token: String
 }
 
@@ -101,14 +108,32 @@ async fn poll_door(_req: HttpRequest,
     web::Json(Poll { available: available })
 }
 
+// This is for fast activation
+#[get("/api/v1/token")]
+async fn fact(_req: HttpRequest,
+              config: web::Data<Config>) -> Result<impl Responder, ViperHTTPError> {
+
+    let mut client = ViperClient::new(&config.ip, &config.port);
+    let sign_up_response = client.sign_up(&config.email)?;
+    Ok(web::Json(sign_up_response))
+}
+
 #[get("/api/v1/doors")]
 async fn list_doors(
-          _req: HttpRequest,
+          req: HttpRequest,
           config: web::Data<Config>
       ) -> Result<impl Responder, ViperHTTPError> {
 
+    let token = String::from("test");
+    //let token = req.headers()
+    //    .get("x-token")
+    //    .expect("")
+    //    .to_str()
+    //    .unwrap()
+    //    .to_string();
+
     let mut client = ViperClient::new(&config.ip, &config.port);
-    let auth_json = client.authorize(config.token.to_string())?;
+    let auth_json = client.authorize(token)?;
 
     if auth_json.response.response_code == 200 {
         let config = client.configuration("all".to_string())?;
@@ -122,12 +147,19 @@ async fn list_doors(
 
 #[post("/api/v1/open")]
 async fn open_door(
-          _req: HttpRequest,
+          req: HttpRequest,
           config: web::Data<Config>
       ) -> Result<impl Responder, ViperHTTPError> {
 
+    let token = req.headers()
+        .get("x-token")
+        .expect("")
+        .to_str()
+        .unwrap()
+        .to_string();
+
     let mut client = ViperClient::new(&config.ip, &config.port);
-    let auth_json = client.authorize(config.token.to_string())?;
+    let auth_json = client.authorize(token)?;
 
     if auth_json.response.response_code == 200 {
         // TODO: Implement the open door action once it's finished
@@ -147,22 +179,23 @@ async fn open_door(
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
 
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
     println!("Booting a server at http://127.0.0.1:8080");
     HttpServer::new(|| {
         App::new()
             .app_data(
-                web::Data::new(
-                    Config {
-                        ip: env::var("DOORBELL_IP").unwrap(),
-                        port: env::var("DOORBELL_PORT").unwrap(),
-                        token: env::var("TOKEN").unwrap()
-                    }
-                )
+                web::Data::new(Config{
+                    ip: env::var("DOORBELL_IP").unwrap(),
+                    port: env::var("DOORBELL_PORT").unwrap(),
+                    email: env::var("EMAIL").unwrap(),
+                })
             )
             .service(poll_door)
             .service(list_doors)
             .service(open_door)
+            .service(fact)
             .service(Files::new("/", "./demo").index_file("index.html"))
+            .wrap(Logger::default())
     })
     .bind(("127.0.0.1", 8080))?
     .run()

@@ -1,6 +1,6 @@
 # Viper web
 
-This is a little web client demo that demonstrates what the viper-client can do.
+This is a little web client demo that demonstrates what the viper-client can do. Again, this only works for the device mentioned in the README of the main folder. If you have any other device, there are no guarentees.
 
 ## Setup
 

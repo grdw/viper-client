@@ -38,7 +38,7 @@ pub struct InfoResponse {
 }
 
 #[allow(dead_code)]
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct ActivateUserResponse {
     pub user_token: String,
